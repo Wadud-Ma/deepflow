@@ -1026,8 +1026,8 @@ impl HttpLog {
     fn decode_skywalking3_id(value: &str, id_type: u8) -> Option<String> {
         let segs: Vec<&str> = value.split("|").collect();
 
-        if id_type == Self::TRACE_ID && segs.len() > 2 {
-            return Some(segs[7].to_string());
+        if id_type == Self::TRACE_ID && segs.len() > 7 {
+            return Some(segs[segs.len() - 2].to_string());
         }
         if id_type == Self::SPAN_ID && segs.len() > 4 {
             return Some(format!("{}-{}", segs[0], segs[1]));

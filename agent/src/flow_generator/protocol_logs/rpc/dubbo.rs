@@ -15,6 +15,7 @@
  */
 
 use std::borrow::Cow;
+use log::logger;
 
 use serde::Serialize;
 
@@ -374,7 +375,7 @@ impl DubboLog {
                 if info.trace_id.len() > 2 {
                     let segs: Vec<&str> = info.trace_id.split("|").collect();
                     if segs.len() > 8 {
-                        info.trace_id = segs[7].to_string();
+                        info.trace_id = segs[segs.len() - 2].to_string();
                     }
                 }
             }
