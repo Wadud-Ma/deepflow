@@ -44,6 +44,7 @@ use crate::{
     utils::bytes::{read_u32_be, read_u32_le},
 };
 use cloud_platform::tingyun;
+use log::info;
 use public::utils::net::h2pack;
 
 #[derive(Serialize, Debug, Default, Clone)]
@@ -1025,6 +1026,7 @@ impl HttpLog {
     // 提取`SEGMENTID-SPANID`展示为HTTP日志中的`SpanID`字段
     fn decode_skywalking3_id(value: &str, id_type: u8) -> Option<String> {
         let segs: Vec<&str> = value.split("|").collect();
+        info!("trace info {:?}: {:?}", value, value);
 
         if id_type == Self::TRACE_ID && segs.len() > 7 {
             return Some(segs[segs.len() - 2].to_string());

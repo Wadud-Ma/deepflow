@@ -15,7 +15,7 @@
  */
 
 use std::borrow::Cow;
-use log::logger;
+use log::{info};
 
 use serde::Serialize;
 
@@ -372,6 +372,7 @@ impl DubboLog {
 
         match trace_type {
             TraceType::Sw3 => {
+                info!("trace info {:?}: {:?}", info, info.trace_id);
                 if info.trace_id.len() > 2 {
                     let segs: Vec<&str> = info.trace_id.split("|").collect();
                     if segs.len() > 8 {
@@ -433,6 +434,7 @@ impl DubboLog {
 
         match trace_type {
             TraceType::Sw3 => {
+                info!("span info {:?}: {:?}", info, info.span_id);
                 // Format:
                 // sw3: SEGMENTID|SPANID|100|100|#IPPORT|#PARENT_ENDPOINT|#ENDPOINT|TRACEID|1
                 if info.span_id.len() > 2 {
