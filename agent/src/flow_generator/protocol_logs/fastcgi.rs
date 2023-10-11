@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+use log::info;
 use public::bytes::read_u16_be;
 
 use public::l7_protocol::L7Protocol;
@@ -202,6 +203,7 @@ impl FastCGIInfo {
 
                 config.map(|c| {
                     if c.is_trace_id(key) {
+                        info!("---- payload: {:?}, trace_key: {:?}, id_type: {:?}", val, key, HttpLog::TRACE_ID);
                         if let Some(id) = HttpLog::decode_id(val, key, HttpLog::TRACE_ID) {
                             self.trace_id = id;
                         }
@@ -210,6 +212,7 @@ impl FastCGIInfo {
 
                 config.map(|c| {
                     if c.is_span_id(key) {
+                        info!("---- payload: {:?}, span_key: {:?}, id_type: {:?}", val, key, HttpLog::SPAN_ID);
                         if let Some(id) = HttpLog::decode_id(val, key, HttpLog::SPAN_ID) {
                             self.span_id = id;
                         }
