@@ -435,6 +435,7 @@ pub struct HttpLog {
 
 impl L7ProtocolParserInterface for HttpLog {
     fn check_payload(&mut self, payload: &[u8], param: &ParseParam) -> bool {
+        info!("===== payload: {:?}", payload);
         if param.l4_protocol != IpProtocol::TCP {
             return false;
         }
