@@ -333,13 +333,13 @@ impl KafkaLog {
         info.client_id = String::from_utf8_lossy(&payload[14..14 + client_id_len]).into_owned();
         info!("kafka payload byteArray: {:?}", payload);
         info!("kafka payload len {:?}", payload.len());
-        if payload.len() > KAFKA_REQ_HEADER_LEN + client_id_len {
+        let req_type = info.get_command();
+        if payload.len() > KAFKA_REQ_HEADER_LEN + client_id_len && req_type == "Produce" {
             let topic_len = read_u16_be(&payload[14 + client_id_len..]) as usize;
             let topic_start = 14 + client_id_len + 2;
             info!("kafka payload topic_len {:?}", topic_len);
             if payload.len() >= topic_start + topic_len{
                 let publish_topic = String::from_utf8_lossy(&payload[topic_start..topic_start + topic_len]).into_owned();
-                let req_type = info.get_command();
                 let other = String::from_utf8_lossy(&payload[14 + client_id_len..]).into_owned();
                 info!("kafka payload request body info {:?} === {:?} === {:?}", req_type, publish_topic, other);
             }
