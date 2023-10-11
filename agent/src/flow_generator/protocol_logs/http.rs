@@ -1086,7 +1086,7 @@ impl HttpLog {
     }
 
     pub fn decode_id(payload: &str, trace_key: &str, id_type: u8) -> Option<String> {
-        info!("---- decode trace_key: {:?}, id_type: {:?}", payload, trace_key, id_type);
+        info!("---- decode trace_key: {:?}, id_type: {:?}", trace_key, id_type);
         let trace_type = TraceType::from(trace_key);
         match trace_type {
             TraceType::Disabled | TraceType::XB3 | TraceType::XB3Span | TraceType::Customize(_) => {
