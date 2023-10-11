@@ -945,6 +945,7 @@ impl HttpLog {
             return;
         };
 
+        info!("===== key: {:?}, val: {:?}, info: {:?}", key, val, info);
         match key {
             ":method" => {
                 info.msg_type = LogMessageType::Request;
