@@ -435,7 +435,6 @@ pub struct HttpLog {
 
 impl L7ProtocolParserInterface for HttpLog {
     fn check_payload(&mut self, payload: &[u8], param: &ParseParam) -> bool {
-        info!("===== payload: {:?}", payload);
         if param.l4_protocol != IpProtocol::TCP {
             return false;
         }
@@ -497,6 +496,7 @@ impl L7ProtocolParserInterface for HttpLog {
                 EbpfType::GoHttp2Uprobe => {
                     self.parse_http2_go_uprobe(&config.l7_log_dynamic, payload, param, &mut info)?;
                     if param.parse_log {
+                        info!("===== http2 info: {:?}", info);
                         return Ok(L7ParseResult::Single(L7ProtocolInfo::HttpInfo(info)));
                     } else {
                         return Ok(L7ParseResult::None);
@@ -507,6 +507,7 @@ impl L7ProtocolParserInterface for HttpLog {
             _ => unreachable!(),
         }
         if param.parse_log {
+            info!("===== http info: {:?}", info);
             Ok(L7ParseResult::Single(L7ProtocolInfo::HttpInfo(info)))
         } else {
             Ok(L7ParseResult::None)
