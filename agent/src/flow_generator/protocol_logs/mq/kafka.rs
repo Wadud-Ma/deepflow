@@ -331,10 +331,11 @@ impl KafkaLog {
         info.api_version = read_u16_be(&payload[6..]);
         info.correlation_id = read_u32_be(&payload[8..]);
         info.client_id = String::from_utf8_lossy(&payload[14..14 + client_id_len]).into_owned();
-        info!("kafka payload byteArray: {:?}", payload);
-        info!("kafka payload len {:?}", payload.len());
         let req_type = info.get_command();
-        if payload.len() > KAFKA_REQ_HEADER_LEN + client_id_len && req_type == "Produce" {
+        if payload.len() > KAFKA_REQ_HEADER_LEN + client_id_len && (req_type == "Produce" || req_type == "Fetch") {
+            info!("kafka payload byteArray: {:?}", payload);
+            info!("kafka payload len {:?}", payload.len());
+            info!("kafka payload req_type {:?}", req_type);
             let topic_len = read_u16_be(&payload[14 + client_id_len..]) as usize;
             let topic_start = 14 + client_id_len + 2;
             info!("kafka payload topic_len {:?}", topic_len);
