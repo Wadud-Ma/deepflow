@@ -1003,6 +1003,7 @@ impl HttpLog {
         if direction == PacketDirection::ClientToServer && key == &config.proxy_client {
             info.client_ip = val.to_owned();
         }
+        info!("===== key: {:?}, info: {:?}", key, info);
     }
 
     // uber-trace-id: TRACEID:SPANID:PARENTSPANID:FLAGS
