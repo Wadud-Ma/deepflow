@@ -496,7 +496,6 @@ impl L7ProtocolParserInterface for HttpLog {
                 EbpfType::GoHttp2Uprobe => {
                     self.parse_http2_go_uprobe(&config.l7_log_dynamic, payload, param, &mut info)?;
                     if param.parse_log {
-                        info!("===== http2 info: {:?}", info);
                         return Ok(L7ParseResult::Single(L7ProtocolInfo::HttpInfo(info)));
                     } else {
                         return Ok(L7ParseResult::None);
@@ -507,7 +506,6 @@ impl L7ProtocolParserInterface for HttpLog {
             _ => unreachable!(),
         }
         if param.parse_log {
-            info!("===== http info: {:?}", info);
             Ok(L7ParseResult::Single(L7ProtocolInfo::HttpInfo(info)))
         } else {
             Ok(L7ParseResult::None)
@@ -945,7 +943,6 @@ impl HttpLog {
             return;
         };
 
-        info!("===== key: {:?}, val: {:?}, info: {:?}", key, val, info);
         match key {
             ":method" => {
                 info.msg_type = LogMessageType::Request;
@@ -1003,7 +1000,6 @@ impl HttpLog {
         if direction == PacketDirection::ClientToServer && key == &config.proxy_client {
             info.client_ip = val.to_owned();
         }
-        info!("===== key: {:?}, trace_types: {:?}, info: {:?}", key, config.trace_types, info);
     }
 
     // uber-trace-id: TRACEID:SPANID:PARENTSPANID:FLAGS
@@ -1030,7 +1026,6 @@ impl HttpLog {
     // 提取`SEGMENTID-SPANID`展示为HTTP日志中的`SpanID`字段
     fn decode_skywalking3_id(value: &str, id_type: u8) -> Option<String> {
         let segs: Vec<&str> = value.split("|").collect();
-        info!("trace info {:?}: {:?}", value, value);
 
         if id_type == Self::TRACE_ID && segs.len() > 7 {
             return Some(segs[segs.len() - 2].to_string());
@@ -1086,7 +1081,6 @@ impl HttpLog {
     }
 
     pub fn decode_id(payload: &str, trace_key: &str, id_type: u8) -> Option<String> {
-        info!("---- decode trace_key: {:?}, id_type: {:?}", trace_key, id_type);
         let trace_type = TraceType::from(trace_key);
         match trace_type {
             TraceType::Disabled | TraceType::XB3 | TraceType::XB3Span | TraceType::Customize(_) => {
