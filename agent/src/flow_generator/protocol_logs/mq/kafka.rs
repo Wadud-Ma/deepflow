@@ -35,7 +35,8 @@ use crate::{
 use log::info;
 
 const KAFKA_FETCH: u16 = 1;
-const FILTER_TOPIC_ARRAY: [&str; 2] = ["ketrace-test-java-02", "ketrace-php-segment-test"];
+const FILTER_TOPIC_ARRAY: [&str; 7] = ["ketrace-test-java-02", "ketrace-php-segment-test", "ketrace-agent-log-test",
+    "ketrace-prod-bkjk-01", "ketrace-java-prod-20200917", "ketrace-php-prod-20200917", "ketrace-agent-log-prod"];
 
 #[derive(Serialize, Debug, Default, Clone)]
 pub struct KafkaInfo {
