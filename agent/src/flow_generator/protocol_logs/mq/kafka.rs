@@ -433,7 +433,7 @@ impl KafkaLog {
     fn parse_topic_name(&mut self, payload: &[u8], index: usize, info: &mut KafkaInfo) -> Result<()> {
         let body = &payload[index..];
         let topic_len = read_u16_be(&body[..]);
-        if topic_len > 0 && body.len() > 2 + topic_len {
+        if topic_len > 0 && body.len() > (2 + topic_len).into() {
             // 前两个字节为长度
             let topic_name_bytes: Vec<u8> = body[2..(2 + topic_len) as usize].to_vec();
             if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
