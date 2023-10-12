@@ -246,7 +246,7 @@ impl L7ProtocolParserInterface for KafkaLog {
         // filter message of ketrace topic
         if let Some(search_str) = &info.publish_topic {
             if FILTER_TOPIC_ARRAY.contains(&search_str.as_str()) {
-                Ok(L7ParseResult::None)
+                return Ok(L7ParseResult::None);
             }
         }
 
