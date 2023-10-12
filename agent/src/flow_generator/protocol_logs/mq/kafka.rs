@@ -428,7 +428,7 @@ impl KafkaLog {
             if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                 if !topic_name.is_empty() && topic_name.is_ascii() {
                     info.publish_topic = Some(topic_name);
-                    info!("Kafka Topic name parsed. current topic_name: {:?}", topic_name);
+                    info!("Kafka Topic name parsed. current topic_name: {:?}", info.publish_topic);
                 } else {
                     info!("Kafka Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                 }
