@@ -35,8 +35,7 @@ use crate::{
 use log::info;
 
 const KAFKA_FETCH: u16 = 1;
-const FILTER_TOPIC_ARRAY: [&str; 7] = ["ketrace-test-java-02", "ketrace-php-segment-test", "ketrace-agent-log-test",
-    "ketrace-prod-bkjk-01", "ketrace-java-prod-20200917", "ketrace-php-prod-20200917", "ketrace-agent-log-prod"];
+const FILTER_TOPIC_ARRAY: [&str; 3] = ["ketrace-test-java-02", "ketrace-php-segment-test", "ketrace-agent-log-test"];
 
 #[derive(Serialize, Debug, Default, Clone)]
 pub struct KafkaInfo {
@@ -428,23 +427,25 @@ impl KafkaLog {
     }
 
     fn parse_topic_name(&mut self, payload: &[u8], index: usize, info: &mut KafkaInfo) -> Result<()> {
-        let body = &payload[index..];
-        let topic_len = read_u16_be(&body[..]);
-        if topic_len > 0 && body.len() > (2 + topic_len).into() {
-            // 前两个字节为长度
-            let topic_name_bytes: Vec<u8> = body[2..(2 + topic_len) as usize].to_vec();
-            if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
-                if !topic_name.is_empty() && topic_name.is_ascii() {
-                    info.publish_topic = Some(topic_name);
-                    info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, info.api_key, info.api_version, payload);
+        if payload.len() > index {
+            let body = &payload[index..];
+            let topic_len = read_u16_be(&body[..]);
+            if topic_len > 0 && body.len() > (2 + topic_len).into() {
+                // 前两个字节为长度
+                let topic_name_bytes: Vec<u8> = body[2..(2 + topic_len) as usize].to_vec();
+                if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
+                    if !topic_name.is_empty() && topic_name.is_ascii() {
+                        info.publish_topic = Some(topic_name);
+                        info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, info.api_key, info.api_version, payload);
+                    } else {
+                        info!("Kafka Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
+                    }
                 } else {
-                    info!("Kafka Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
+                    info!("Failed to decode kafka topic name. payload: {:?}", payload);
                 }
-            } else {
-                info!("Failed to decode kafka topic name. payload: {:?}", payload);
+            }else {
+                info!("Kafka request body length is too short, payload: {:?}", payload);
             }
-        }else {
-            info!("Kafka request body length is too short, payload: {:?}", payload);
         }
         Ok(())
     }
