@@ -15,7 +15,6 @@
  */
 
 use std::borrow::Cow;
-use log::{info};
 
 use serde::Serialize;
 
