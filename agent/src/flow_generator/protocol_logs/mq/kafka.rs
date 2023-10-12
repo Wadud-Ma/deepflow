@@ -197,6 +197,7 @@ impl From<KafkaInfo> for L7ProtocolSendLog {
             resp_len: f.resp_msg_size,
             req: L7Request {
                 req_type: String::from(command_str),
+                resource: f.publish_topic,
                 ..Default::default()
             },
             resp: L7Response {
@@ -331,21 +332,111 @@ impl KafkaLog {
         info.api_version = read_u16_be(&payload[6..]);
         info.correlation_id = read_u32_be(&payload[8..]);
         info.client_id = String::from_utf8_lossy(&payload[14..14 + client_id_len]).into_owned();
-        let req_type = info.get_command();
-        if payload.len() > KAFKA_REQ_HEADER_LEN + client_id_len && (req_type == "Produce" || req_type == "Fetch") {
-            let other = String::from_utf8_lossy(&payload[14 + client_id_len..]).into_owned();
-            info!("kafka payload request api_key: {:? }, api_version:{:?}, client_id: {:?}, byteArray: {:?}, body_str: {:?}", req_type, info.api_version, info.client_id, payload, other);
-            // let topic_len = read_u16_be(&payload[14 + client_id_len..]) as usize;
-            // let topic_start = 14 + client_id_len + 2;
-            // info!("kafka payload topic_len {:?}", topic_len);
-            // if payload.len() >= topic_start + topic_len{
-            //     let publish_topic = String::from_utf8_lossy(&payload[topic_start..topic_start + topic_len]).into_owned();
-            //     info!("kafka payload publish_topic {:?}", publish_topic);
-            // }
+
+        let client_id_end = 14 + client_id_len;
+        // parse_payload 解析 topic
+        if !strict && payload.len() > KAFKA_REQ_HEADER_LEN + client_id_len {
+            self.parse_body(payload, info, client_id_end)?;
         }
 
         if !info.client_id.is_ascii() {
             return Err(Error::KafkaLogParseFailed);
+        }
+        Ok(())
+    }
+
+    // 协议解析，不同api_key 和 api_version 解析方式不同
+    // https://kafka.apache.org/protocol.html#protocol_details
+    fn parse_body(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
+        let api_version = info.api_version;
+        let req_type = info.get_command();
+        info!("Parse kafka body, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", req_type, api_version, payload);
+        match req_type {
+            "Produce" => {
+                self.parse_produce_message(payload, info, start)?;
+            }
+            "Fetch" => {
+                self.parse_fetch_message(payload, info, start)?;
+            }
+            _ => {
+                info!("Skip parsing topic metadata in kafka request message， current api_key string: {:?}", req_type)
+            }
+        }
+
+        Ok(())
+    }
+
+    // 解析 produce request
+    fn parse_produce_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
+        let api_version = info.api_version;
+        let mut step = 10;
+        match api_version {
+            0..=2 => {
+                let index = start + step;
+                self.parse_topic_name(payload, index, info)
+            }
+            3..=9 => {
+                step = 12;
+                let index = start + step;
+                self.parse_topic_name(payload, index, info)
+            }
+            _ => {
+                info!("Skip parsing topic metadata in kafka produce request message, current api_version: {:?}", api_version)
+            }
+        }
+
+        Ok(())
+    }
+
+    // 解析 fetch request
+    fn parse_fetch_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
+        let api_version = info.api_version;
+        let mut step = 20;
+        match api_version {
+            0..=2 => {
+                let index = start + step;
+                self.parse_topic_name(payload, index, info)
+            }
+            3 => {
+                step = 20;
+                let index = start + step;
+                self.parse_topic_name(payload, index, info)
+            }
+            4..=6 => {
+                step = 21;
+                let index = start + step;
+                self.parse_topic_name(payload, index, info)
+            }
+            7..=15 => {
+                step = 29;
+                let index = start + step;
+                self.parse_topic_name(payload, index, info)
+            }
+            _ => {
+                info!("Skip parsing topic metadata in kafka fetch request message， current api_version: {:?}", api_version)
+            }
+        }
+        Ok(())
+    }
+
+    fn parse_topic_name(&mut self, payload: &[u8], index: usize, info: &mut KafkaInfo) -> Result<()> {
+        let body = &payload[index..];
+        let topic_len = read_u16_be(&body[..]);
+        if topic_len > 0 {
+            // 前两个字节为长度
+            if let Ok(topic_name_bytes) = String::from_utf8(&body[2..(2 + topic_len) as usize]) {
+                if let Ok(topic_name) = topic_name_bytes.to_string() {
+                    if !topic_name.is_empty() && topic_name.is_ascii() {
+                        info.publish_topic = topic_name;
+                    } else {
+                        info!("Kafka Topic name is not a valid ASCII string. payload: {:?}", payload);
+                    }
+                } else {
+                    info!("Failed to convert kafka topic name to String. payload: {:?}", payload);
+                }
+            } else {
+                info!("Failed to decode kafka topic name. payload: {:?}", payload);
+            }
         }
         Ok(())
     }
