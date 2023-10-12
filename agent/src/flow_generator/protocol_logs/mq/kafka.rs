@@ -35,6 +35,7 @@ use crate::{
 use log::info;
 
 const KAFKA_FETCH: u16 = 1;
+const FILTER_TOPIC_ARRAY: [&str; 2] = ["ketrace-test-java-02", "ketrace-php-segment-test"];
 
 #[derive(Serialize, Debug, Default, Clone)]
 pub struct KafkaInfo {
@@ -241,6 +242,13 @@ impl L7ProtocolParserInterface for KafkaLog {
         };
         let mut info = KafkaInfo::default();
         Self::parse(self, payload, param.l4_protocol, param.direction, &mut info)?;
+
+        // filter message of ketrace topic
+        if let Some(search_str) = &info.publish_topic {
+            if FILTER_TOPIC_ARRAY.contains(&search_str.as_str()) {
+                Ok(L7ParseResult::None)
+            }
+        }
 
         // handle kafka status code
         {
