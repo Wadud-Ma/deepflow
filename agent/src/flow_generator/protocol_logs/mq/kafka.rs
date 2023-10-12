@@ -350,7 +350,7 @@ impl KafkaLog {
     fn parse_body(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
         let api_version = info.api_version;
         let req_type = info.get_command();
-        info!("Parse kafka body, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", req_type, api_version, payload);
+        // info!("Parse kafka body, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", req_type, api_version, payload);
         match req_type {
             "Produce" => {
                 self.parse_produce_message(payload, info, start)?;
@@ -428,7 +428,7 @@ impl KafkaLog {
             if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                 if !topic_name.is_empty() && topic_name.is_ascii() {
                     info.publish_topic = Some(topic_name);
-                    info!("Kafka Topic name parsed. current topic_name: {:?}", info.publish_topic);
+                    info!("Kafka Topic name parsed. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, info.api_key, info.api_version, payload);
                 } else {
                     info!("Kafka Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                 }
