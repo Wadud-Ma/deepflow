@@ -197,7 +197,7 @@ impl From<KafkaInfo> for L7ProtocolSendLog {
             resp_len: f.resp_msg_size,
             req: L7Request {
                 req_type: String::from(command_str),
-                resource: f.publish_topic,
+                resource: f.publish_topic.unwrap_or_default(),
                 ..Default::default()
             },
             resp: L7Response {
@@ -424,15 +424,13 @@ impl KafkaLog {
         let topic_len = read_u16_be(&body[..]);
         if topic_len > 0 {
             // 前两个字节为长度
-            if let Ok(topic_name_bytes) = String::from_utf8(&body[2..(2 + topic_len) as usize]) {
-                if let Ok(topic_name) = topic_name_bytes.to_string() {
-                    if !topic_name.is_empty() && topic_name.is_ascii() {
-                        info.publish_topic = topic_name;
-                    } else {
-                        info!("Kafka Topic name is not a valid ASCII string. payload: {:?}", payload);
-                    }
+            let topic_name_bytes: Vec<u8> = body[2..(2 + topic_len) as usize].to_vec();
+            if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
+                if !topic_name.is_empty() && topic_name.is_ascii() {
+                    info.publish_topic = topic_name;
+                    info!("Kafka Topic name parsed. current topic_name: {:?}", topic_name);
                 } else {
-                    info!("Failed to convert kafka topic name to String. payload: {:?}", payload);
+                    info!("Kafka Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                 }
             } else {
                 info!("Failed to decode kafka topic name. payload: {:?}", payload);
