@@ -246,9 +246,12 @@ impl L7ProtocolParserInterface for KafkaLog {
         // filter message of ketrace topic
         if let Some(search_str) = &info.publish_topic {
             if FILTER_TOPIC_ARRAY.contains(&search_str.as_str()) {
+                info!("Kafka Topic name filtered. current topic_name: {:?}, current payload: {:?}", info.publish_topic, payload);
                 return Ok(L7ParseResult::None);
             }
         }
+
+        info!("Kafka Topic name parsed. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, info.api_key, info.api_version, payload);
 
         // handle kafka status code
         {
@@ -356,7 +359,7 @@ impl KafkaLog {
     // 协议解析，不同api_key 和 api_version 解析方式不同
     // https://kafka.apache.org/protocol.html#protocol_details
     fn parse_body(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
-        let api_version = info.api_version;
+        // let api_version = info.api_version;
         let req_type = info.get_command();
         // info!("Parse kafka body, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", req_type, api_version, payload);
         match req_type {
@@ -430,19 +433,20 @@ impl KafkaLog {
     fn parse_topic_name(&mut self, payload: &[u8], index: usize, info: &mut KafkaInfo) -> Result<()> {
         let body = &payload[index..];
         let topic_len = read_u16_be(&body[..]);
-        if topic_len > 0 {
+        if topic_len > 0 && body.len() > 2 + topic_len {
             // 前两个字节为长度
             let topic_name_bytes: Vec<u8> = body[2..(2 + topic_len) as usize].to_vec();
             if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                 if !topic_name.is_empty() && topic_name.is_ascii() {
                     info.publish_topic = Some(topic_name);
-                    info!("Kafka Topic name parsed. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, info.api_key, info.api_version, payload);
                 } else {
                     info!("Kafka Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                 }
             } else {
                 info!("Failed to decode kafka topic name. payload: {:?}", payload);
             }
+        }else {
+            info!("Kafka request body length is too short, payload: {:?}", payload);
         }
         Ok(())
     }
