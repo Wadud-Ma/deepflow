@@ -373,12 +373,12 @@ impl KafkaLog {
         match api_version {
             0..=2 => {
                 let index = start + step;
-                self.parse_topic_name(payload, index, info)
+                self.parse_topic_name(payload, index, info)?;
             }
             3..=9 => {
                 step = 12;
                 let index = start + step;
-                self.parse_topic_name(payload, index, info)
+                self.parse_topic_name(payload, index, info)?;
             }
             _ => {
                 info!("Skip parsing topic metadata in kafka produce request message, current api_version: {:?}", api_version)
@@ -395,22 +395,22 @@ impl KafkaLog {
         match api_version {
             0..=2 => {
                 let index = start + step;
-                self.parse_topic_name(payload, index, info)
+                self.parse_topic_name(payload, index, info)?;
             }
             3 => {
                 step = 20;
                 let index = start + step;
-                self.parse_topic_name(payload, index, info)
+                self.parse_topic_name(payload, index, info)?;
             }
             4..=6 => {
                 step = 21;
                 let index = start + step;
-                self.parse_topic_name(payload, index, info)
+                self.parse_topic_name(payload, index, info)?;
             }
             7..=15 => {
                 step = 29;
                 let index = start + step;
-                self.parse_topic_name(payload, index, info)
+                self.parse_topic_name(payload, index, info)?;
             }
             _ => {
                 info!("Skip parsing topic metadata in kafka fetch request message， current api_version: {:?}", api_version)
