@@ -429,10 +429,11 @@ impl KafkaLog {
     fn parse_topic_name(&mut self, payload: &[u8], index: usize, info: &mut KafkaInfo) -> Result<()> {
         if payload.len() > index {
             let body = &payload[index..];
-            let topic_len = read_u16_be(&body[..]);
-            if topic_len > 0 && body.len() > (2 + topic_len).into() {
+            let topic_len = read_u16_be(&body[..]) as usize;
+            let topic_end_index = (2 + topic_len) as usize;
+            if topic_len > 0 && body.len() > topic_end_index {
                 // 前两个字节为长度
-                let topic_name_bytes: Vec<u8> = body[2..(2 + topic_len) as usize].to_vec();
+                let topic_name_bytes: Vec<u8> = body[2..topic_end_index].to_vec();
                 if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
