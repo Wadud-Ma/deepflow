@@ -437,14 +437,13 @@ impl KafkaLog {
         let api_version = info.api_version;
         let req_type = info.get_command();
         match api_version {
-            2..=4 => {
+            1..=6 => {
                 if payload.len() > start {
                     let mut s_index = start.clone();
-                    let mut e_index = start.clone();
                     // string group_id
                     let group_id_len = read_u16_be(&payload[s_index..]) as usize;
                     s_index += 2;
-                    e_index = s_index + group_id_len;
+                    let mut e_index = s_index + group_id_len;
                     // let group_id = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
 
                     // int32 generation_id
@@ -458,9 +457,13 @@ impl KafkaLog {
                     // let member_id = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
 
                     // 为什么+12 而不是+8 呢?
-                    // int64 retention_time_ms
-                    // let retention_time_ms = read_u64_be(&payload[e_index..]);
-                    s_index = e_index + 12;
+                    if api_version >= 2 && api_version <= 4 {
+                        // int64 retention_time_ms
+                        // let retention_time_ms = read_u64_be(&payload[e_index..]);
+                        s_index = e_index + 12;
+                    }else {
+                        s_index = e_index + 4;
+                    }
 
                     let topic_len = read_u16_be(&payload[s_index..]) as usize;
                     s_index += 2;
