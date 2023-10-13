@@ -467,7 +467,7 @@ impl KafkaLog {
                     e_index = s_index + topic_len;
                     let topic_name = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
                     if !topic_name.is_empty() && topic_name.is_ascii() {
-                        info.publish_topic = topic_name;
+                        info.publish_topic = Some(topic_name);
                         info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, req_type, info.api_version, payload);
                     }
                 }
