@@ -371,7 +371,7 @@ impl KafkaLog {
                 self.parse_fetch_message(payload, info, start)?;
             }
             "OffsetCommit" => {
-                info!("current api_key: OffsetCommit, payload: {:?}", payload)
+                info!("current api_key: OffsetCommit, current api_version: {:?}, payload: {:?}", info.api_version, payload)
             }
             _ => {}
         }
