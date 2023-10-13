@@ -370,6 +370,9 @@ impl KafkaLog {
             "Fetch" => {
                 self.parse_fetch_message(payload, info, start)?;
             }
+            "OffsetCommit" => {
+                info!("current api_key: OffsetCommit, payload: {:?}", payload)
+            }
             _ => {}
         }
 
@@ -447,8 +450,6 @@ impl KafkaLog {
                 } else {
                     info!("Failed to decode kafka topic name. payload: {:?}", payload);
                 }
-            }else {
-                info!("Kafka request body length is too short, payload: {:?}", payload);
             }
         }
         Ok(())
