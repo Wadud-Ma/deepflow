@@ -371,7 +371,7 @@ impl KafkaLog {
                 self.parse_fetch_message(payload, info, start)?;
             }
             "OffsetCommit" => {
-                info!("current api_key: OffsetCommit, current api_version: {:?}, payload: {:?}", info.api_version, payload)
+                self.parse_offset_commit_message(payload, info, start)?;
             }
             _ => {}
         }
@@ -432,18 +432,66 @@ impl KafkaLog {
         Ok(())
     }
 
+    // 解析 OffsetCommit request
+    fn parse_offset_commit_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
+        let api_version = info.api_version;
+        let req_type = info.get_command();
+        match api_version {
+            2..=4 => {
+                if payload.len() > start {
+                    let mut s_index = start.clone();
+                    let mut e_index = start.clone();
+                    // string group_id
+                    let group_id_len = read_u16_be(&payload[s_index..]) as usize;
+                    s_index += 2;
+                    e_index = s_index + group_id_len;
+                    // let group_id = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
+
+                    // int32 generation_id
+                    // let generation_id = read_u32_be(&payload[e_index..]);
+
+                    // string member_id
+                    s_index = e_index + 4;
+                    let member_id_len = read_u16_be(&payload[s_index..]) as usize;
+                    s_index += 2;
+                    e_index= s_index + member_id_len;
+                    // let member_id = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
+
+                    // 为什么+12 而不是+8 呢?
+                    // int64 retention_time_ms
+                    // let retention_time_ms = read_u64_be(&payload[e_index..]);
+                    s_index = e_index + 12;
+
+                    let topic_len = read_u16_be(&payload[s_index..]) as usize;
+                    s_index += 2;
+                    e_index = s_index + topic_len;
+                    let topic_name = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
+                    if !topic_name.is_empty() && topic_name.is_ascii() {
+                        info.publish_topic = topic_name;
+                        info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, req_type, info.api_version, payload);
+                    }
+                }
+            }
+            _ => {
+                info!("Skip parsing topic metadata in kafka OffsetCommit request message， current api_version: {:?}, current payload: {:?}", api_version, payload);
+            }
+        }
+        Ok(())
+    }
+
     fn parse_topic_name(&mut self, payload: &[u8], index: usize, info: &mut KafkaInfo) -> Result<()> {
         if payload.len() > index {
             let body = &payload[index..];
             let topic_len = read_u16_be(&body[..]) as usize;
             let topic_end_index = (2 + topic_len) as usize;
+            let req_type = info.get_command();
             if topic_len > 0 && body.len() > topic_end_index {
                 // 前两个字节为长度
                 let topic_name_bytes: Vec<u8> = body[2..topic_end_index].to_vec();
                 if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
-                        info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, info.api_key, info.api_version, payload);
+                        info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, req_type, info.api_version, payload);
                     } else {
                         info!("Kafka Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                     }
