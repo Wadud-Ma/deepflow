@@ -243,10 +243,15 @@ impl L7ProtocolParserInterface for KafkaLog {
         let mut info = KafkaInfo::default();
         Self::parse(self, payload, param.l4_protocol, param.direction, &mut info)?;
 
-        // filter message of ketrace topic
+        // filter message when the request_type field is empty
+        let command_str = info.get_command();
+        if command_str.is_empty() {
+            return Ok(L7ParseResult::None);
+        }
+
+        // filter message whith ketrace topic
         if let Some(search_str) = &info.publish_topic {
             if FILTER_TOPIC_ARRAY.contains(&search_str.as_str()) {
-                info!("Kafka Topic name filtered. current topic_name: {:?}, current payload: {:?}", info.publish_topic, payload);
                 return Ok(L7ParseResult::None);
             }
         }
@@ -365,9 +370,7 @@ impl KafkaLog {
             "Fetch" => {
                 self.parse_fetch_message(payload, info, start)?;
             }
-            _ => {
-                info!("Skip parsing topic metadata in kafka request message， current api_key string: {:?}", req_type)
-            }
+            _ => {}
         }
 
         Ok(())
