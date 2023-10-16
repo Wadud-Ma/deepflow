@@ -451,29 +451,35 @@ impl KafkaLog {
 
                     // string member_id
                     s_index = e_index + 4;
-                    if payload.len() > s_index {
-                        let member_id_len = read_u16_be(&payload[s_index..]) as usize;
-                        s_index += 2;
-                        e_index= s_index + member_id_len;
-                        // let member_id = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
+                    if payload.len() < s_index{
+                        return Ok(())
+                    }
+                    let member_id_len = read_u16_be(&payload[s_index..]) as usize;
+                    s_index += 2;
+                    e_index= s_index + member_id_len;
+                    // let member_id = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
 
-                        // 为什么+12 而不是+8 呢?
-                        if api_version >= 2 && api_version <= 4 {
-                            // int64 retention_time_ms
-                            // let retention_time_ms = read_u64_be(&payload[e_index..]);
-                            s_index = e_index + 12;
-                        }else {
-                            s_index = e_index + 4;
-                        }
-
-                        let topic_len = read_u16_be(&payload[s_index..]) as usize;
-                        s_index += 2;
-                        e_index = s_index + topic_len;
-                        let topic_name = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
-                        if !topic_name.is_empty() && topic_name.is_ascii() {
-                            info.publish_topic = Some(topic_name);
-                            // info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, req_type, info.api_version, payload);
-                        }
+                    // 为什么+12 而不是+8 呢?
+                    if api_version >= 2 && api_version <= 4 {
+                        // int64 retention_time_ms
+                        // let retention_time_ms = read_u64_be(&payload[e_index..]);
+                        s_index = e_index + 12;
+                    }else {
+                        s_index = e_index + 4;
+                    }
+                    if payload.len() < s_index{
+                        return Ok(())
+                    }
+                    let topic_len = read_u16_be(&payload[s_index..]) as usize;
+                    s_index += 2;
+                    e_index = s_index + topic_len;
+                    if payload.len() < s_index || payload.len() < e_index {
+                        return Ok(())
+                    }
+                    let topic_name = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
+                    if !topic_name.is_empty() && topic_name.is_ascii() {
+                        info.publish_topic = Some(topic_name);
+                        // info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, req_type, info.api_version, payload);
                     }
                 }
             }
