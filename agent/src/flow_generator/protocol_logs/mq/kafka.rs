@@ -471,7 +471,7 @@ impl KafkaLog {
                     let topic_name = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
-                        info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, req_type, info.api_version, payload);
+                        // info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, req_type, info.api_version, payload);
                     }
                 }
             }
@@ -494,7 +494,7 @@ impl KafkaLog {
                 if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
-                        info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, req_type, info.api_version, payload);
+                        // info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, req_type, info.api_version, payload);
                     } else {
                         info!("Kafka Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                     }
