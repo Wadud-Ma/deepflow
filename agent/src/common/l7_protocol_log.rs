@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+use std::fmt;
 use std::cell::RefCell;
 use std::fmt::Debug;
 use std::net::IpAddr;
@@ -334,7 +335,6 @@ impl L7PerfCache {
     }
 }
 
-#[derive(Debug)]
 pub struct ParseParam<'a> {
     // l3/l4 info
     pub l4_protocol: IpProtocol,
@@ -375,6 +375,22 @@ pub struct ParseParam<'a> {
 
     // the config of `l7_log_packet_size`, must set in parse_payload and check_payload
     pub buf_size: u16,
+}
+
+impl fmt::Debug for ParseParam {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ParseParam")
+            .field("l4_protocol", &self.l4_protocol)
+            .field("ip_src", &self.ip_src)
+            .field("ip_dst", &self.ip_dst)
+            .field("port_src", &self.port_src)
+            .field("port_dst", &self.port_dst)
+            .field("flow_id", &self.flow_id)
+            .field("direction", &self.direction)
+            .field("ebpf_type", &self.ebpf_type)
+            .field("parse_log", &self.parse_log)
+            .finish()
+    }
 }
 
 impl ParseParam<'_> {
