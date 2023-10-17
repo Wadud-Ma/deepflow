@@ -437,7 +437,7 @@ impl KafkaLog {
         let api_version = info.api_version;
         // let req_type = info.get_command();
         match api_version {
-            1..=6 => {
+            1..=7 => {
                 if payload.len() > start {
                     let mut s_index = start.clone();
                     // string group_id
@@ -480,6 +480,41 @@ impl KafkaLog {
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
                         // info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, req_type, info.api_version, payload);
+                    }
+                }
+            }
+            8 => {
+                if payload.len() > start {
+                    let mut s_index = start.clone() + 1;
+                    let group_id_len = read_u8_be(&payload[s_index..]) as usize;
+                    s_index += 1;
+                    let mut e_index = s_index + group_id_len - 1;
+                    // let group_id = String::from_utf8_lossy(&payload[s_index..e_index.clone()]).into_owned();
+
+                    // let generation_id = read_u16_be(&payload[e_index..]);
+
+                    s_index = e_index + 4;
+                    if payload.len() < s_index{
+                        return Ok(())
+                    }
+                    let member_id_len = read_u8_be(&payload[s_index..]) as usize ;
+                    s_index += 1;
+                    e_index= s_index + member_id_len - 1;
+                    // let member_id = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
+
+                    s_index = e_index + 2;
+                    if payload.len() < s_index{
+                        return Ok(())
+                    }
+                    let topic_len = read_u8_be(&payload[s_index..]) as usize;
+                    s_index += 1;
+                    e_index = s_index + topic_len - 1;
+                    if payload.len() < s_index || payload.len() < e_index {
+                        return Ok(())
+                    }
+                    let topic_name = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
+                    if !topic_name.is_empty() && topic_name.is_ascii() {
+                        info.publish_topic = Some(topic_name);
                     }
                 }
             }
