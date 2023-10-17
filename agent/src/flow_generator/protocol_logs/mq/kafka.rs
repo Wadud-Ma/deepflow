@@ -30,7 +30,7 @@ use crate::{
             value_is_default, value_is_negative, AppProtoHead, L7ResponseStatus, LogMessageType,
         },
     },
-    utils::bytes::{read_i16_be, read_u16_be, read_u32_be},
+    utils::bytes::{read_i16_be, read_u16_be, read_u32_be, read_u8_be},
 };
 use log::info;
 
