@@ -377,7 +377,7 @@ pub struct ParseParam<'a> {
     pub buf_size: u16,
 }
 
-impl fmt::Debug for ParseParam {
+impl<'a> fmt::Debug for ParseParam<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ParseParam")
             .field("l4_protocol", &self.l4_protocol)
