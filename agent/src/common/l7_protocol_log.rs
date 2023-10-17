@@ -334,6 +334,7 @@ impl L7PerfCache {
     }
 }
 
+#[derive(Debug)]
 pub struct ParseParam<'a> {
     // l3/l4 info
     pub l4_protocol: IpProtocol,
