@@ -394,7 +394,8 @@ impl KafkaLog {
                 self.parse_topic_name(payload, index, info)?;
             }
             _ => {
-                info!("Skip parsing topic metadata in kafka produce request message, current api_version: {:?}, payload: {:?}, param: {:?}", api_version, payload, param)
+                info!("Skip parsing topic metadata in kafka produce request message, current api_version: {:?}, payload: {:?}, ip_src: {:?}, port_src: {:?}, ip_dst: {:?}, port_dst: {:?}",
+                    api_version, payload, param.ip_src, param.port_src, param.ip_dst, param.port_dst)
             }
         }
 
@@ -426,7 +427,8 @@ impl KafkaLog {
                 self.parse_topic_name(payload, index, info)?;
             }
             _ => {
-                info!("Skip parsing topic metadata in kafka fetch request message， current api_version: {:?}, payload: {:?}, param: {:?}", api_version, payload, param)
+                info!("Skip parsing topic metadata in kafka fetch request message， current api_version: {:?}, payload: {:?}, ip_src: {:?}, port_src: {:?}, ip_dst: {:?}, port_dst: {:?}",
+                    api_version, payload, param.ip_src, param.port_src, param.ip_dst, param.port_dst)
             }
         }
         Ok(())
@@ -519,7 +521,8 @@ impl KafkaLog {
                 }
             }
             _ => {
-                info!("Skip parsing topic metadata in kafka OffsetCommit request message， current api_version: {:?}, current payload: {:?}, param: {:?}", api_version, payload, param);
+                info!("Skip parsing topic metadata in kafka OffsetCommit request message， current api_version: {:?}, current payload: {:?}, ip_src: {:?}, port_src: {:?}, ip_dst: {:?}, port_dst: {:?}",
+                    api_version, payload, param.ip_src, param.port_src, param.ip_dst, param.port_dst);
             }
         }
         Ok(())
