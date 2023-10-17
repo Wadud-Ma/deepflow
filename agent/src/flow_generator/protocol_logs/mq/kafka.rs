@@ -231,7 +231,7 @@ impl L7ProtocolParserInterface for KafkaLog {
             return false;
         }
         let mut info = KafkaInfo::default();
-        let ok = self.request(payload, true, &mut info).is_ok() && info.check();
+        let ok = self.request(payload, true, &mut info, param).is_ok() && info.check();
         self.reset();
         ok
     }
@@ -241,7 +241,7 @@ impl L7ProtocolParserInterface for KafkaLog {
             self.perf_stats = Some(L7PerfStats::default())
         };
         let mut info = KafkaInfo::default();
-        Self::parse(self, payload, param.l4_protocol, param.direction, &mut info)?;
+        Self::parse(self, payload, param.l4_protocol, param.direction, &mut info, param)?;
 
         // filter message when the request_type field is empty
         let command_str = info.get_command();
@@ -329,7 +329,7 @@ impl KafkaLog {
     // ================================================================================
     // The protocol identification is strictly checked to avoid misidentification.
     // The log analysis is not strictly checked because there may be length truncation
-    fn request(&mut self, payload: &[u8], strict: bool, info: &mut KafkaInfo) -> Result<()> {
+    fn request(&mut self, payload: &[u8], strict: bool, info: &mut KafkaInfo, param: &ParseParam) -> Result<()> {
         let req_len = read_u32_be(payload);
         info.req_msg_size = Some(req_len);
         let client_id_len = read_u16_be(&payload[12..]) as usize;
@@ -350,7 +350,7 @@ impl KafkaLog {
         let client_id_end = 14 + client_id_len;
         // parse_payload 解析 topic
         if !strict && payload.len() > KAFKA_REQ_HEADER_LEN + client_id_len {
-            self.parse_body(payload, info, client_id_end)?;
+            self.parse_body(payload, info, client_id_end, param)?;
         }
 
         if !info.client_id.is_ascii() {
@@ -361,17 +361,17 @@ impl KafkaLog {
 
     // 协议解析，不同api_key 和 api_version 解析方式不同
     // https://kafka.apache.org/protocol.html#protocol_details
-    fn parse_body(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
+    fn parse_body(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize, param: &ParseParam) -> Result<()> {
         let req_type = info.get_command();
         match req_type {
             "Produce" => {
-                self.parse_produce_message(payload, info, start)?;
+                self.parse_produce_message(payload, info, start, param)?;
             }
             "Fetch" => {
-                self.parse_fetch_message(payload, info, start)?;
+                self.parse_fetch_message(payload, info, start, param)?;
             }
             "OffsetCommit" => {
-                self.parse_offset_commit_message(payload, info, start)?;
+                self.parse_offset_commit_message(payload, info, start, param)?;
             }
             _ => {}
         }
@@ -380,7 +380,7 @@ impl KafkaLog {
     }
 
     // 解析 produce request
-    fn parse_produce_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
+    fn parse_produce_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize, param: &ParseParam) -> Result<()> {
         let api_version = info.api_version;
         let mut step = 10;
         match api_version {
@@ -394,7 +394,7 @@ impl KafkaLog {
                 self.parse_topic_name(payload, index, info)?;
             }
             _ => {
-                info!("Skip parsing topic metadata in kafka produce request message, current api_version: {:?}", api_version)
+                info!("Skip parsing topic metadata in kafka produce request message, current api_version: {:?}, payload: {:?}, param: {:?}", api_version, payload, param)
             }
         }
 
@@ -402,7 +402,7 @@ impl KafkaLog {
     }
 
     // 解析 fetch request
-    fn parse_fetch_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
+    fn parse_fetch_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize, param: &ParseParam) -> Result<()> {
         let api_version = info.api_version;
         let mut step = 20;
         match api_version {
@@ -426,14 +426,14 @@ impl KafkaLog {
                 self.parse_topic_name(payload, index, info)?;
             }
             _ => {
-                info!("Skip parsing topic metadata in kafka fetch request message， current api_version: {:?}", api_version)
+                info!("Skip parsing topic metadata in kafka fetch request message， current api_version: {:?}, payload: {:?}, param: {:?}", api_version, payload, param)
             }
         }
         Ok(())
     }
 
     // 解析 OffsetCommit request
-    fn parse_offset_commit_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
+    fn parse_offset_commit_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize, param: &ParseParam) -> Result<()> {
         let api_version = info.api_version;
         // let req_type = info.get_command();
         match api_version {
@@ -519,7 +519,7 @@ impl KafkaLog {
                 }
             }
             _ => {
-                info!("Skip parsing topic metadata in kafka OffsetCommit request message， current api_version: {:?}, current payload: {:?}", api_version, payload);
+                info!("Skip parsing topic metadata in kafka OffsetCommit request message， current api_version: {:?}, current payload: {:?}, param: {:?}", api_version, payload, param);
             }
         }
         Ok(())
@@ -562,6 +562,7 @@ impl KafkaLog {
         proto: IpProtocol,
         direction: PacketDirection,
         info: &mut KafkaInfo,
+        param: &ParseParam
     ) -> Result<()> {
         if proto != IpProtocol::TCP {
             return Err(Error::InvalidIpProtocol);
@@ -571,7 +572,7 @@ impl KafkaLog {
         }
         match direction {
             PacketDirection::ClientToServer => {
-                self.request(payload, false, info)?;
+                self.request(payload, false, info, param)?;
                 self.perf_stats.as_mut().map(|p| p.inc_req());
             }
             PacketDirection::ServerToClient => {
