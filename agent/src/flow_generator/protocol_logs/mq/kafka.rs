@@ -250,11 +250,11 @@ impl L7ProtocolParserInterface for KafkaLog {
         }
 
         // filter message whith ketrace topic
-        if let Some(search_str) = &info.publish_topic {
-            if FILTER_TOPIC_ARRAY.contains(&search_str.as_str()) {
-                return Ok(L7ParseResult::None);
-            }
-        }
+        // if let Some(search_str) = &info.publish_topic {
+        //     if FILTER_TOPIC_ARRAY.contains(&search_str.as_str()) {
+        //         return Ok(L7ParseResult::None);
+        //     }
+        // }
 
         // handle kafka status code
         {
