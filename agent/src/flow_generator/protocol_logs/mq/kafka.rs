@@ -386,12 +386,12 @@ impl KafkaLog {
         match api_version {
             0..=2 => {
                 let index = start + step;
-                self.parse_topic_name(payload, index, info)?;
+                self.parse_topic_name(payload, index, info, param)?;
             }
             3..=9 => {
                 step = 12;
                 let index = start + step;
-                self.parse_topic_name(payload, index, info)?;
+                self.parse_topic_name(payload, index, info, param)?;
             }
             _ => {
                 info!("Skip parsing topic metadata in kafka produce request message, current api_version: {:?}, payload: {:?}, param: {:?}",
@@ -409,22 +409,22 @@ impl KafkaLog {
         match api_version {
             0..=2 => {
                 let index = start + step;
-                self.parse_topic_name(payload, index, info)?;
+                self.parse_topic_name(payload, index, info, param)?;
             }
             3 => {
                 step = 20;
                 let index = start + step;
-                self.parse_topic_name(payload, index, info)?;
+                self.parse_topic_name(payload, index, info, param)?;
             }
             4..=6 => {
                 step = 21;
                 let index = start + step;
-                self.parse_topic_name(payload, index, info)?;
+                self.parse_topic_name(payload, index, info, param)?;
             }
             7..=15 => {
                 step = 29;
                 let index = start + step;
-                self.parse_topic_name(payload, index, info)?;
+                self.parse_topic_name(payload, index, info, param)?;
             }
             _ => {
                 info!("Skip parsing topic metadata in kafka fetch request message， current api_version: {:?}, payload: {:?}, param: {:?}",
@@ -528,19 +528,19 @@ impl KafkaLog {
         Ok(())
     }
 
-    fn parse_topic_name(&mut self, payload: &[u8], index: usize, info: &mut KafkaInfo) -> Result<()> {
+    fn parse_topic_name(&mut self, payload: &[u8], index: usize, info: &mut KafkaInfo, param: &ParseParam) -> Result<()> {
         if payload.len() > index {
             let body = &payload[index..];
             let topic_len = read_u16_be(&body[..]) as usize;
             let topic_end_index = (2 + topic_len) as usize;
-            // let req_type = info.get_command();
+            let req_type = info.get_command();
             if topic_len > 0 && body.len() > topic_end_index {
                 // 前两个字节为长度
                 let topic_name_bytes: Vec<u8> = body[2..topic_end_index].to_vec();
                 if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
-                        // info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, req_type, info.api_version, payload);
+                        info!("Kafka Topic name parsed success. topic_name: {:?}, api_key: {:?}, api_version: {:?}, payload: {:?}, param: {:?}", info.publish_topic, req_type, info.api_version, payload, param);
                     } else {
                         info!("Kafka Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                     }
