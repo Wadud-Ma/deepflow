@@ -32,7 +32,7 @@ use crate::{
     },
     utils::bytes::{read_i16_be, read_u16_be, read_u32_be, read_u8_be},
 };
-use log::info;
+use log::{info, warn};
 
 const KAFKA_FETCH: u16 = 1;
 const FILTER_TOPIC_ARRAY: [&str; 3] = ["ketrace-test-java-02", "ketrace-php-segment-test", "ketrace-agent-log-test"];
@@ -250,11 +250,11 @@ impl L7ProtocolParserInterface for KafkaLog {
         }
 
         // filter message whith ketrace topic
-        if let Some(search_str) = &info.publish_topic {
-            if FILTER_TOPIC_ARRAY.contains(&search_str.as_str()) {
-                return Ok(L7ParseResult::None);
-            }
-        }
+        // if let Some(search_str) = &info.publish_topic {
+        //     if FILTER_TOPIC_ARRAY.contains(&search_str.as_str()) {
+        //         return Ok(L7ParseResult::None);
+        //     }
+        // }
 
         // handle kafka status code
         {
@@ -394,7 +394,7 @@ impl KafkaLog {
                 self.parse_topic_name(payload, index, info, param)?;
             }
             _ => {
-                info!("Skip parsing topic metadata in kafka produce request message, current api_version: {:?}, payload: {:?}, param: {:?}",
+                warn!("Skip parsing topic metadata in kafka produce request message, current api_version: {:?}, payload: {:?}, param: {:?}",
                     api_version, payload, param)
             }
         }
@@ -427,7 +427,7 @@ impl KafkaLog {
                 self.parse_topic_name(payload, index, info, param)?;
             }
             _ => {
-                info!("Skip parsing topic metadata in kafka fetch request message， current api_version: {:?}, payload: {:?}, param: {:?}",
+                warn!("Skip parsing topic metadata in kafka fetch request message， current api_version: {:?}, payload: {:?}, param: {:?}",
                     api_version, payload, param)
             }
         }
@@ -521,7 +521,7 @@ impl KafkaLog {
                 }
             }
             _ => {
-                info!("Skip parsing topic metadata in kafka OffsetCommit request message， current api_version: {:?}, current payload: {:?}, param: {:?}",
+                warn!("Skip parsing topic metadata in kafka OffsetCommit request message， current api_version: {:?}, current payload: {:?}, param: {:?}",
                     api_version, payload, param);
             }
         }
@@ -542,20 +542,22 @@ impl KafkaLog {
                         info.publish_topic = Some(topic_name);
                         info!("Kafka Topic name parsed success. topic_name: {:?}, api_key: {:?}, api_version: {:?}, payload: {:?}, param: {:?}", info.publish_topic, req_type, info.api_version, payload, param);
                     } else {
-                        info!("Kafka Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
+                        warn!("Kafka Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                     }
                 } else {
-                    info!("Failed to decode kafka topic name. payload: {:?}", payload);
+                    warn!("Failed to decode kafka topic name. payload: {:?}", payload);
                 }
             }
         }
         Ok(())
     }
 
-    fn response(&mut self, payload: &[u8], info: &mut KafkaInfo) -> Result<()> {
+    fn response(&mut self, payload: &[u8], info: &mut KafkaInfo, param: &ParseParam) -> Result<()> {
         info.resp_msg_size = Some(read_u32_be(payload));
         info.correlation_id = read_u32_be(&payload[4..]);
         info.msg_type = LogMessageType::Response;
+        let req_type = info.get_command();
+        info!("Kafka Response. topic_name: {:?}, api_key: {:?}, api_version: {:?}, payload: {:?}, param: {:?}", info.publish_topic, req_type, info.api_version, payload, param);
         Ok(())
     }
 
@@ -579,7 +581,7 @@ impl KafkaLog {
                 self.perf_stats.as_mut().map(|p| p.inc_req());
             }
             PacketDirection::ServerToClient => {
-                self.response(payload, info)?;
+                self.response(payload, info, param)?;
                 self.perf_stats.as_mut().map(|p| p.inc_resp());
             }
         }
