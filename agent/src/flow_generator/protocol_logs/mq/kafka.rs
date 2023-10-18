@@ -547,6 +547,8 @@ impl KafkaLog {
                 } else {
                     warn!("Failed to decode kafka topic name. payload: {:?}", payload);
                 }
+            }else {
+                warn!("Kafka payload len is too short, api_key: {:?}, api_version: {:?}, payload: {:?}, param:{:?}", req_type, info.api_version, payload, param);
             }
         }
         Ok(())
