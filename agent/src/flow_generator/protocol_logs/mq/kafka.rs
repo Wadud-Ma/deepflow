@@ -407,15 +407,14 @@ impl KafkaLog {
                 if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
-                        info!("Kafka Response Topic name parsed success. topic_name: {:?}, payload: {:?}, param: {:?}", info.publish_topic, payload, param);
                     } else {
-                        warn!("Kafka Response Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
+                        warn!(" Kafka Response Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                     }
                 } else {
-                    warn!("Failed Response to decode kafka topic name. payload: {:?}", payload);
+                    warn!(" Failed Response to decode kafka topic name. payload: {:?}", payload);
                 }
             }else {
-                warn!("Kafka Response payload len is too short, api_key: {:?}, api_version: {:?}, payload: {:?}, param:{:?}", req_type, info.api_version, payload, param);
+                warn!(" Kafka Response payload len is too short, api_key: {:?}, api_version: {:?}, payload: {:?}, param:{:?}", req_type, info.api_version, payload, param);
             }
         }
         Ok(())
@@ -436,7 +435,7 @@ impl KafkaLog {
                 self.parse_topic_name(payload, index, info, param)?;
             }
             _ => {
-                warn!("Skip parsing topic metadata in kafka produce request message, current api_version: {:?}, payload: {:?}, param: {:?}",
+                warn!(" Skip parsing topic metadata in kafka produce request message, current api_version: {:?}, payload: {:?}, param: {:?}",
                     api_version, payload, param)
             }
         }
@@ -469,7 +468,7 @@ impl KafkaLog {
                 self.parse_topic_name(payload, index, info, param)?;
             }
             _ => {
-                warn!("Skip parsing topic metadata in kafka fetch request message， current api_version: {:?}, payload: {:?}, param: {:?}",
+                warn!(" Skip parsing topic metadata in kafka fetch request message， current api_version: {:?}, payload: {:?}, param: {:?}",
                     api_version, payload, param)
             }
         }
@@ -523,7 +522,6 @@ impl KafkaLog {
                     let topic_name = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
-                        // info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, req_type, info.api_version, payload);
                     }
                 }
             }
@@ -563,7 +561,7 @@ impl KafkaLog {
                 }
             }
             _ => {
-                warn!("Skip parsing topic metadata in kafka OffsetCommit request message， current api_version: {:?}, current payload: {:?}, param: {:?}",
+                warn!(" Skip parsing topic metadata in kafka OffsetCommit request message， current api_version: {:?}, current payload: {:?}, param: {:?}",
                     api_version, payload, param);
             }
         }
@@ -582,15 +580,14 @@ impl KafkaLog {
                 if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
-                        info!("Kafka Request Topic name parsed success. topic_name: {:?}, api_key: {:?}, api_version: {:?}, payload: {:?}, param: {:?}", info.publish_topic, req_type, info.api_version, payload, param);
                     } else {
-                        warn!("Kafka Request Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
+                        warn!(" Kafka Request Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                     }
                 } else {
-                    warn!("Failed Request to decode kafka topic name. payload: {:?}", payload);
+                    warn!(" Failed Request to decode kafka topic name. payload: {:?}", payload);
                 }
             }else {
-                warn!("Kafka Request payload len is too short, api_key: {:?}, api_version: {:?}, payload: {:?}, param:{:?}", req_type, info.api_version, payload, param);
+                warn!(" Kafka Request payload len is too short, api_key: {:?}, api_version: {:?}, payload: {:?}, param:{:?}", req_type, info.api_version, payload, param);
             }
         }
         Ok(())
