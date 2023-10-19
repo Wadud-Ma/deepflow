@@ -360,15 +360,14 @@ impl KafkaLog {
         info.api_version = read_u16_be(&payload[6..]);
         info.correlation_id = read_u32_be(&payload[8..]);
         info.client_id = String::from_utf8_lossy(&payload[14..14 + client_id_len]).into_owned();
+        if !info.client_id.is_ascii() {
+            return Err(Error::KafkaLogParseFailed);
+        }
 
         let client_id_end = 14 + client_id_len;
         // parse_payload 解析 topic
         if !strict && payload.len() > KAFKA_REQ_HEADER_LEN + client_id_len {
             self.parse_request_body(payload, info, client_id_end, param)?;
-        }
-
-        if !info.client_id.is_ascii() {
-            return Err(Error::KafkaLogParseFailed);
         }
         Ok(())
     }
