@@ -97,8 +97,8 @@ impl L7ProtocolInfoInterface for KafkaInfo {
 
     fn skip_send(&self) -> bool {
         // filter ketrace | agent log
-        if let Some(search_str) = self.publish_topic {
-            return FILTER_TOPIC_ARRAY.contains(&search_str);
+        if let Some(search_str) = &self.publish_topic {
+            return FILTER_TOPIC_ARRAY.contains(&search_str.as_str());
         }
         false
     }
