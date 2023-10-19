@@ -26,6 +26,7 @@ use crate::{
         error::{Error, Result},
         protocol_logs::{
             consts::KAFKA_REQ_HEADER_LEN,
+            consts::KAFKA_RESP_HEADER_LEN,
             pb_adapter::{ExtendedInfo, L7ProtocolSendLog, L7Request, L7Response},
             value_is_default, value_is_negative, AppProtoHead, L7ResponseStatus, LogMessageType,
         },
@@ -35,7 +36,8 @@ use crate::{
 use log::{info, warn};
 
 const KAFKA_FETCH: u16 = 1;
-const FILTER_TOPIC_ARRAY: [&str; 3] = ["ketrace-test-java-02", "ketrace-php-segment-test", "ketrace-agent-log-test"];
+// const FILTER_TOPIC_ARRAY: [&str; 3] = ["ketrace-test-java-02", "ketrace-php-segment-test", "ketrace-agent-log-test"];
+const FILTER_TOPIC_ARRAY: [&str; 1] = ["ketest-dayu-log"];
 
 #[derive(Serialize, Debug, Default, Clone)]
 pub struct KafkaInfo {
@@ -92,6 +94,16 @@ impl L7ProtocolInfoInterface for KafkaInfo {
     fn is_tls(&self) -> bool {
         self.is_tls
     }
+
+    fn skip_send(&self) -> bool {
+        // filter ketrace | agent log
+        if let Some(search_str) = self.publish_topic {
+            if FILTER_TOPIC_ARRAY.contains(&search_str.as_str()) {
+                return true;
+            }
+        }
+        return false
+    }
 }
 
 impl KafkaInfo {
@@ -107,9 +119,13 @@ impl KafkaInfo {
         if other.status_code != None {
             self.status_code = other.status_code;
         }
+        if self.publish_topic.is_none() && other.publish_topic != None{
+            self.publish_topic = other.publish_topic
+        }
     }
 
     pub fn check(&self) -> bool {
+        // todo 校验version
         if self.api_key > Self::API_KEY_MAX {
             return false;
         }
@@ -350,7 +366,7 @@ impl KafkaLog {
         let client_id_end = 14 + client_id_len;
         // parse_payload 解析 topic
         if !strict && payload.len() > KAFKA_REQ_HEADER_LEN + client_id_len {
-            self.parse_body(payload, info, client_id_end, param)?;
+            self.parse_request_body(payload, info, client_id_end, param)?;
         }
 
         if !info.client_id.is_ascii() {
@@ -361,7 +377,7 @@ impl KafkaLog {
 
     // 协议解析，不同api_key 和 api_version 解析方式不同
     // https://kafka.apache.org/protocol.html#protocol_details
-    fn parse_body(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize, param: &ParseParam) -> Result<()> {
+    fn parse_request_body(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize, param: &ParseParam) -> Result<()> {
         let req_type = info.get_command();
         match req_type {
             "Produce" => {
@@ -376,6 +392,35 @@ impl KafkaLog {
             _ => {}
         }
 
+        Ok(())
+    }
+
+    fn parse_response_body(&mut self, payload: &[u8], info: &mut KafkaInfo, index: usize, param: &ParseParam) -> Result<()> {
+        // let throttle_time_ms = read_u32_be(&payload[index..]);
+        // println!("kafka payload throttle_time_ms {:?}", throttle_time_ms);
+        let mut start = index + 4;
+        if payload.len() > start {
+            let body = &payload[start..];
+            let topic_len = read_u16_be(&body[..]) as usize;
+            let topic_end_index = (2 + topic_len) as usize;
+            let req_type = info.get_command();
+            if topic_len > 0 && body.len() > topic_end_index {
+                // 前两个字节为长度
+                let topic_name_bytes: Vec<u8> = body[2..topic_end_index].to_vec();
+                if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
+                    if !topic_name.is_empty() && topic_name.is_ascii() {
+                        info.publish_topic = Some(topic_name);
+                        info!("Kafka Response Topic name parsed success. topic_name: {:?}, payload: {:?}, param: {:?}", info.publish_topic, payload, param);
+                    } else {
+                        warn!("Kafka Response Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
+                    }
+                } else {
+                    warn!("Failed Response to decode kafka topic name. payload: {:?}", payload);
+                }
+            }else {
+                warn!("Kafka Response payload len is too short, api_key: {:?}, api_version: {:?}, payload: {:?}, param:{:?}", req_type, info.api_version, payload, param);
+            }
+        }
         Ok(())
     }
 
@@ -540,26 +585,34 @@ impl KafkaLog {
                 if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
-                        info!("Kafka Topic name parsed success. topic_name: {:?}, api_key: {:?}, api_version: {:?}, payload: {:?}, param: {:?}", info.publish_topic, req_type, info.api_version, payload, param);
+                        info!("Kafka Request Topic name parsed success. topic_name: {:?}, api_key: {:?}, api_version: {:?}, payload: {:?}, param: {:?}", info.publish_topic, req_type, info.api_version, payload, param);
                     } else {
-                        warn!("Kafka Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
+                        warn!("Kafka Request Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                     }
                 } else {
-                    warn!("Failed to decode kafka topic name. payload: {:?}", payload);
+                    warn!("Failed Request to decode kafka topic name. payload: {:?}", payload);
                 }
             }else {
-                warn!("Kafka payload len is too short, api_key: {:?}, api_version: {:?}, payload: {:?}, param:{:?}", req_type, info.api_version, payload, param);
+                warn!("Kafka Request payload len is too short, api_key: {:?}, api_version: {:?}, payload: {:?}, param:{:?}", req_type, info.api_version, payload, param);
             }
         }
         Ok(())
     }
 
     fn response(&mut self, payload: &[u8], info: &mut KafkaInfo, param: &ParseParam) -> Result<()> {
-        info.resp_msg_size = Some(read_u32_be(payload));
+        let resp_len = read_u32_be(payload);
+        info.resp_msg_size = Some(resp_len);
         info.correlation_id = read_u32_be(&payload[4..]);
         info.msg_type = LogMessageType::Response;
-        let req_type = info.get_command();
-        info!("Kafka Response. topic_name: {:?}, api_key: {:?}, api_version: {:?}, payload: {:?}, param: {:?}", info.publish_topic, req_type, info.api_version, payload, param);
+        if payload.len() < KAFKA_RESP_HEADER_LEN {
+            return Err(Error::KafkaLogParseFailed);
+        }
+        if resp_len as usize != payload.len() - Self::MSG_LEN_SIZE {
+            return Err(Error::KafkaLogParseFailed);
+        }
+
+        let correlation_id_end = 8;
+        self.parse_response_body(payload, info, correlation_id_end, param)?;
         Ok(())
     }
 
