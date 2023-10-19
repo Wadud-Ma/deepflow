@@ -98,11 +98,9 @@ impl L7ProtocolInfoInterface for KafkaInfo {
     fn skip_send(&self) -> bool {
         // filter ketrace | agent log
         if let Some(search_str) = self.publish_topic {
-            if FILTER_TOPIC_ARRAY.contains(&search_str.as_str()) {
-                return true;
-            }
+            return FILTER_TOPIC_ARRAY.contains(&search_str);
         }
-        return false
+        false
     }
 }
 
@@ -398,7 +396,7 @@ impl KafkaLog {
     fn parse_response_body(&mut self, payload: &[u8], info: &mut KafkaInfo, index: usize, param: &ParseParam) -> Result<()> {
         // let throttle_time_ms = read_u32_be(&payload[index..]);
         // println!("kafka payload throttle_time_ms {:?}", throttle_time_ms);
-        let mut start = index + 4;
+        let start = index + 4;
         if payload.len() > start {
             let body = &payload[start..];
             let topic_len = read_u16_be(&body[..]) as usize;
