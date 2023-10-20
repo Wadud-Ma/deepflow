@@ -383,7 +383,7 @@ impl KafkaLog {
                 self.parse_fetch_message(payload, info, start, param)?;
             }
             "OffsetCommit" => {
-                self.parse_offset_commit_message(payload, info, start, param)?;
+                self.parse_offset_commit_message(payload, info, start)?;
             }
             _ => {}
         }
@@ -391,7 +391,7 @@ impl KafkaLog {
         Ok(())
     }
 
-    fn parse_response_body(&mut self, payload: &[u8], info: &mut KafkaInfo, index: usize, param: &ParseParam) -> Result<()> {
+    fn parse_response_body(&mut self, payload: &[u8], info: &mut KafkaInfo, index: usize) -> Result<()> {
         // let throttle_time_ms = read_u32_be(&payload[index..]);
         // println!("kafka payload throttle_time_ms {:?}", throttle_time_ms);
         let start = index + 4 + 4;
@@ -399,7 +399,7 @@ impl KafkaLog {
             let body = &payload[start..];
             let topic_len = read_u16_be(&body[..]) as usize;
             let topic_end_index = (2 + topic_len) as usize;
-            let req_type = info.get_command();
+            // let req_type = info.get_command();
             if topic_len > 0 && body.len() > topic_end_index {
                 // 前两个字节为长度
                 let topic_name_bytes: Vec<u8> = body[2..topic_end_index].to_vec();
@@ -436,25 +436,24 @@ impl KafkaLog {
     // 解析 fetch request
     fn parse_fetch_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize, param: &ParseParam) -> Result<()> {
         let api_version = info.api_version;
-        let mut step = 20;
         match api_version {
             0..=2 => {
-                step = 16;
+                let step = 16;
                 let index = start + step;
                 self.parse_topic_name(payload, index, info, param)?;
             }
             3 => {
-                step = 20;
+                let step = 20;
                 let index = start + step;
                 self.parse_topic_name(payload, index, info, param)?;
             }
             4..=6 => {
-                step = 21;
+                let step = 21;
                 let index = start + step;
                 self.parse_topic_name(payload, index, info, param)?;
             }
             7..=15 => {
-                step = 29;
+                let step = 29;
                 let index = start + step;
                 self.parse_topic_name(payload, index, info, param)?;
             }
@@ -464,7 +463,7 @@ impl KafkaLog {
     }
 
     // 解析 OffsetCommit request
-    fn parse_offset_commit_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize, param: &ParseParam) -> Result<()> {
+    fn parse_offset_commit_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
         let api_version = info.api_version;
         // let req_type = info.get_command();
         match api_version {
@@ -578,7 +577,7 @@ impl KafkaLog {
         Ok(())
     }
 
-    fn response(&mut self, payload: &[u8], info: &mut KafkaInfo, param: &ParseParam) -> Result<()> {
+    fn response(&mut self, payload: &[u8], info: &mut KafkaInfo) -> Result<()> {
         let resp_len = read_u32_be(payload);
         info.resp_msg_size = Some(resp_len);
         info.correlation_id = read_u32_be(&payload[4..]);
@@ -591,7 +590,7 @@ impl KafkaLog {
         }
 
         let correlation_id_end = 8;
-        self.parse_response_body(payload, info, correlation_id_end, param)?;
+        self.parse_response_body(payload, info, correlation_id_end)?;
         Ok(())
     }
 
@@ -615,7 +614,7 @@ impl KafkaLog {
                 self.perf_stats.as_mut().map(|p| p.inc_req());
             }
             PacketDirection::ServerToClient => {
-                self.response(payload, info, param)?;
+                self.response(payload, info)?;
                 self.perf_stats.as_mut().map(|p| p.inc_resp());
             }
         }
