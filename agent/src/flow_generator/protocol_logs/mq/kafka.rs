@@ -33,11 +33,10 @@ use crate::{
     },
     utils::bytes::{read_i16_be, read_u16_be, read_u32_be, read_u8_be},
 };
-use log::{info, warn};
+use log::{info};
 
 const KAFKA_FETCH: u16 = 1;
-// const FILTER_TOPIC_ARRAY: [&str; 3] = ["ketrace-test-java-02", "ketrace-php-segment-test", "ketrace-agent-log-test"];
-const FILTER_TOPIC_ARRAY: [&str; 1] = ["ketest-dayu-log"];
+const FILTER_TOPIC_ARRAY: [&str; 4] = ["ketrace-test-java-02", "ketrace-php-segment-test", "ketrace-agent-log-test", "ketest-dayu-log"];
 
 #[derive(Serialize, Debug, Default, Clone)]
 pub struct KafkaInfo {
@@ -407,15 +406,8 @@ impl KafkaLog {
                 if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
-                        info!("Kafka Response Topic name parsed success. topic_name: {:?}, payload: {:?}, param: {:?}", info.publish_topic, payload, param);
-                    } else {
-                        warn!(" Kafka Response Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                     }
-                } else {
-                    warn!(" Failed Response to decode kafka topic name. payload: {:?}", payload);
                 }
-            }else {
-                warn!(" Kafka Response payload len is too short, api_key: {:?}, api_version: {:?}, payload: {:?}, param:{:?}", req_type, info.api_version, payload, param);
             }
         }
         Ok(())
@@ -435,10 +427,7 @@ impl KafkaLog {
                 let index = start + step;
                 self.parse_topic_name(payload, index, info, param)?;
             }
-            _ => {
-                warn!(" Skip parsing topic metadata in kafka produce request message, current api_version: {:?}, payload: {:?}, param: {:?}",
-                    api_version, payload, param)
-            }
+            _ => {}
         }
 
         Ok(())
@@ -468,10 +457,7 @@ impl KafkaLog {
                 let index = start + step;
                 self.parse_topic_name(payload, index, info, param)?;
             }
-            _ => {
-                warn!(" Skip parsing topic metadata in kafka fetch request message， current api_version: {:?}, payload: {:?}, param: {:?}",
-                    api_version, payload, param)
-            }
+            _ => {}
         }
         Ok(())
     }
@@ -561,10 +547,7 @@ impl KafkaLog {
                     }
                 }
             }
-            _ => {
-                warn!(" Skip parsing topic metadata in kafka OffsetCommit request message， current api_version: {:?}, current payload: {:?}, param: {:?}",
-                    api_version, payload, param);
-            }
+            _ => {}
         }
         Ok(())
     }
@@ -582,13 +565,13 @@ impl KafkaLog {
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
                     } else {
-                        warn!(" Kafka Request Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
+                        info!(" Kafka Request Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                     }
                 } else {
-                    warn!(" Failed Request to decode kafka topic name. payload: {:?}", payload);
+                    info!(" Failed Request to decode kafka topic name. payload: {:?}", payload);
                 }
             }else {
-                warn!(" Kafka Request payload len is too short, api_key: {:?}, api_version: {:?}, payload: {:?}, param:{:?}", req_type, info.api_version, payload, param);
+                info!(" Kafka Request payload len is too short, api_key: {:?}, api_version: {:?}, payload: {:?}, param:{:?}", req_type, info.api_version, payload, param);
             }
         }
         Ok(())
