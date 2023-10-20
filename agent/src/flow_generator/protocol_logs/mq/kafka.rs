@@ -395,7 +395,7 @@ impl KafkaLog {
     fn parse_response_body(&mut self, payload: &[u8], info: &mut KafkaInfo, index: usize, param: &ParseParam) -> Result<()> {
         // let throttle_time_ms = read_u32_be(&payload[index..]);
         // println!("kafka payload throttle_time_ms {:?}", throttle_time_ms);
-        let start = index + 4;
+        let start = index + 4 + 4;
         if payload.len() > start {
             let body = &payload[start..];
             let topic_len = read_u16_be(&body[..]) as usize;
@@ -407,6 +407,7 @@ impl KafkaLog {
                 if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
+                        info!("Kafka Response Topic name parsed success. topic_name: {:?}, payload: {:?}, param: {:?}", info.publish_topic, payload, param);
                     } else {
                         warn!(" Kafka Response Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                     }
