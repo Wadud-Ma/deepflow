@@ -439,6 +439,7 @@ impl KafkaLog {
         let mut step = 20;
         match api_version {
             0..=2 => {
+                step = 16;
                 let index = start + step;
                 self.parse_topic_name(payload, index, info, param)?;
             }
