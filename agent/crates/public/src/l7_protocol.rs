@@ -113,11 +113,10 @@ impl Default for L7ProtocolEnum {
 
 impl L7ProtocolEnum {
     pub fn get_l7_protocol(&self) -> L7Protocol {
-        // todo test custom wasm
         match self {
             L7ProtocolEnum::L7Protocol(p) => *p,
             L7ProtocolEnum::ProtobufRpc(_) => L7Protocol::ProtobufRPC,
-            L7ProtocolEnum::Custom(_) => L7Protocol::DNS,
+            L7ProtocolEnum::Custom(_) => L7Protocol::Custom,
         }
     }
 }
