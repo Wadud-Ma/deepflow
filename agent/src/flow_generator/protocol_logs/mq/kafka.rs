@@ -33,7 +33,6 @@ use crate::{
     },
     utils::bytes::{read_i16_be, read_u16_be, read_u32_be, read_u8_be},
 };
-use log::{info};
 
 const KAFKA_FETCH: u16 = 1;
 const FILTER_TOPIC_ARRAY: [&str; 4] = ["ketrace-test-java-02", "ketrace-php-segment-test", "ketrace-agent-log-test", "ketest-dayu-log"];
@@ -564,14 +563,8 @@ impl KafkaLog {
                 if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
-                    } else {
-                        info!(" Kafka Request Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                     }
-                } else {
-                    info!(" Failed Request to decode kafka topic name. payload: {:?}", payload);
                 }
-            }else {
-                info!(" Kafka Request payload len is too short, api_key: {:?}, api_version: {:?}, payload: {:?}, param:{:?}", req_type, info.api_version, payload, param);
             }
         }
         Ok(())
