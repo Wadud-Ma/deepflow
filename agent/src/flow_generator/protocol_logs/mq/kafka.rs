@@ -243,7 +243,7 @@ impl L7ProtocolParserInterface for KafkaLog {
             return false;
         }
         let mut info = KafkaInfo::default();
-        let ok = self.request(payload, true, &mut info, param).is_ok() && info.check();
+        let ok = self.request(payload, true, &mut info).is_ok() && info.check();
         self.reset();
         ok
     }
