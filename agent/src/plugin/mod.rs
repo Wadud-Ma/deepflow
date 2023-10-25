@@ -437,9 +437,29 @@ impl L7ProtocolInfoInterface for CustomInfo {
     }
 
     fn app_proto_head(&self) -> Option<AppProtoHead> {
-        // todo test custom wasm
+        // fix custom wasm
+        let mut protocol = L7Protocol::Custom;
+        match self.proto {
+            20 => { protocol = L7Protocol::Http1 }
+            21 => { protocol = L7Protocol::Http2 }
+            22 => { protocol = L7Protocol::Http1TLS }
+            23 => { protocol = L7Protocol::Http2TLS }
+            40 => { protocol = L7Protocol::Dubbo }
+            41 => { protocol = L7Protocol::Grpc }
+            42 => { protocol = L7Protocol::ProtobufRPC }
+            43 => { protocol = L7Protocol::SofaRPC }
+            44 => { protocol = L7Protocol::FastCGI }
+            60 => { protocol = L7Protocol::MySQL }
+            61 => { protocol = L7Protocol::PostgreSQL }
+            80 => { protocol = L7Protocol::Redis }
+            81 => { protocol = L7Protocol::MongoDB }
+            100 => { protocol = L7Protocol::Kafka }
+            101 => { protocol = L7Protocol::MQTT }
+            120 => { protocol = L7Protocol::DNS }
+            _ => {}
+        }
         Some(AppProtoHead {
-            proto: L7Protocol::DNS,
+            proto: protocol,
             msg_type: self.msg_type,
             rrt: self.rrt,
         })

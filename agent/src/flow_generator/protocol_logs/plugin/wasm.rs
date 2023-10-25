@@ -118,8 +118,7 @@ impl L7ProtocolParserInterface for WasmLog {
     }
 
     fn protocol(&self) -> L7Protocol {
-        // todo test custom wasm
-        L7Protocol::DNS
+        L7Protocol::Custom
     }
 
     fn custom_protocol(&self) -> Option<CustomProtocol> {
