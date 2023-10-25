@@ -437,8 +437,9 @@ impl L7ProtocolInfoInterface for CustomInfo {
     }
 
     fn app_proto_head(&self) -> Option<AppProtoHead> {
+        // todo test custom wasm
         Some(AppProtoHead {
-            proto: L7Protocol::Custom,
+            proto: L7Protocol::DNS,
             msg_type: self.msg_type,
             rrt: self.rrt,
         })
