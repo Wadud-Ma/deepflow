@@ -442,11 +442,8 @@ impl L7ProtocolInfoInterface for CustomInfo {
         match self.proto {
             20 => { protocol = L7Protocol::Http1 }
             21 => { protocol = L7Protocol::Http2 }
-            22 => { protocol = L7Protocol::Http1TLS }
-            23 => { protocol = L7Protocol::Http2TLS }
             40 => { protocol = L7Protocol::Dubbo }
             41 => { protocol = L7Protocol::Grpc }
-            42 => { protocol = L7Protocol::ProtobufRPC }
             43 => { protocol = L7Protocol::SofaRPC }
             44 => { protocol = L7Protocol::FastCGI }
             60 => { protocol = L7Protocol::MySQL }
