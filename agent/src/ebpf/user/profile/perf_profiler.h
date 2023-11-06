@@ -142,10 +142,12 @@ typedef struct {
 } stack_trace_msg_t;
 
 int stop_continuous_profiler(void);
-int start_continuous_profiler(int freq,
+int start_continuous_profiler(int freq, int java_syms_space_limit,
+			      int java_syms_update_delay,
 			      tracer_callback_t callback);
 void process_stack_trace_data_for_flame_graph(stack_trace_msg_t *val);
 void release_flame_graph_hash(void);
 int set_profiler_regex(const char *pattern);
 int set_profiler_cpu_aggregation(int flag);
+struct bpf_tracer *get_profiler_tracer(void);
 #endif /* DF_USER_PERF_PROFILER_H */

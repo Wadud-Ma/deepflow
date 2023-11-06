@@ -25,14 +25,16 @@ use std::{
     hash::{Hash, Hasher},
     io::{Cursor, Write},
     mem,
+    net::IpAddr,
     os::unix::{fs::MetadataExt, io::AsRawFd},
     path::{Path, PathBuf},
 };
 
-use log::{debug, trace, warn};
+use log::{debug, info, trace, warn};
 use neli::{
     attr::Attribute,
     consts::{genl::*, nl::*, rtnl::*, socket::*},
+    err::{NlError, SerError},
     genl::Genlmsghdr,
     nl::{NlPayload, Nlmsghdr},
     rtnl::{Rtattr, Rtgenmsg},
@@ -43,11 +45,91 @@ use neli::{
 use nix::sched::{setns, CloneFlags};
 use num_enum::IntoPrimitive;
 use regex::Regex;
+use thiserror::Error;
 
-use super::{Error, InterfaceInfo, Result};
-use crate::utils::net::{
-    addr_list, link_by_name, link_list, links_by_name_regex, Addr, Link, IF_TYPE_IPVLAN,
+use super::utils::net::{
+    self, addr_list, link_by_name, link_list, links_by_name_regex, Addr, Link, MacAddr,
+    IF_TYPE_IPVLAN,
 };
+
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("io error: {0}")]
+    IoError(#[from] std::io::Error),
+    #[error("neli error: {0}")]
+    NeliError(String),
+    #[error("net error: {0}")]
+    NetError(#[from] net::Error),
+    #[error("netns not found")]
+    NotFound,
+    #[error("syscall error: {0}")]
+    Syscall(#[from] nix::Error),
+}
+
+impl<T: Debug, P: Debug> From<NlError<T, P>> for Error {
+    fn from(e: NlError<T, P>) -> Self {
+        Self::NeliError(format!("{}", e))
+    }
+}
+
+impl From<SerError> for Error {
+    fn from(e: SerError) -> Self {
+        Self::NeliError(format!("{}", e))
+    }
+}
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
+#[derive(Debug, Default, Clone)]
+pub struct InterfaceInfo {
+    pub tap_ns: NsFile,
+    pub tap_idx: u32,
+    pub mac: MacAddr,
+    pub ips: Vec<IpAddr>,
+    pub name: String,
+    pub device_id: String,
+    pub ns_inode: u64,
+}
+
+impl fmt::Display for InterfaceInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let ips_str = self
+            .ips
+            .iter()
+            .map(|ip| ip.to_string())
+            .collect::<Vec<String>>()
+            .as_slice()
+            .join(",");
+        write!(
+            f,
+            "{}: {}: {} [{}] device {} ino {}",
+            self.tap_idx, self.name, self.mac, ips_str, self.device_id, self.ns_inode
+        )
+    }
+}
+
+impl PartialEq for InterfaceInfo {
+    fn eq(&self, other: &Self) -> bool {
+        self.tap_idx.eq(&other.tap_idx) && self.mac.eq(&other.mac)
+    }
+}
+
+impl Eq for InterfaceInfo {}
+
+impl PartialOrd for InterfaceInfo {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for InterfaceInfo {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self.tap_idx.cmp(&other.tap_idx), self.mac.cmp(&other.mac)) {
+            (Ordering::Equal, mac) => mac,
+            (tap, _) => tap,
+        }
+    }
+}
 
 #[derive(IntoPrimitive)]
 #[repr(u16)]
@@ -344,9 +426,33 @@ thread_local! {
     // set at first `setns` call
     // used to restore net namespace
     static ORIGINAL_NETNS: OnceCell<File> = OnceCell::new();
+    // check if current system supports network namespace
+    // if not, setns calls will be NOOP
+    static SUPPORTS_NETNS: OnceCell<bool> = OnceCell::new();
+}
+
+const SELF_NS_PATH: &'static str = "/proc/self/ns/net";
+
+pub fn supported() -> bool {
+    SUPPORTS_NETNS.with(|f| {
+        *f.get_or_init(|| {
+            if fs::metadata(SELF_NS_PATH).is_ok() {
+                true
+            } else {
+                info!(
+                    "path {} is not accessible, setns() calls will be NOOP",
+                    SELF_NS_PATH
+                );
+                false
+            }
+        })
+    })
 }
 
 pub fn set_netns(fp: &File) -> Result<()> {
+    if !supported() {
+        return Ok(());
+    }
     let cur_path = current_netns_path();
     ORIGINAL_NETNS.with(|f| {
         f.get_or_init(|| File::open(&cur_path).expect("open thread net namespace file failed"));
@@ -377,6 +483,9 @@ pub fn set_netns(fp: &File) -> Result<()> {
 }
 
 pub fn reset_netns() -> Result<()> {
+    if !supported() {
+        return Ok(());
+    }
     ORIGINAL_NETNS.with(|f| {
         if let Some(fp) = f.get() {
             // do nothing if current ns is target ns
@@ -402,6 +511,9 @@ pub fn reset_netns() -> Result<()> {
 }
 
 pub fn open_named_and_setns(ns: &NsFile) -> Result<()> {
+    if !supported() {
+        return Ok(());
+    }
     let path = match ns {
         NsFile::Root => Cow::Borrowed(Path::new(ROOT_NS_PATH)),
         NsFile::Named(name) => Cow::Owned(Path::new(NAMED_PATH).join(name)),

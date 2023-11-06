@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/deepflowio/deepflow/server/ingester/common"
+	profile_common "github.com/deepflowio/deepflow/server/ingester/profile/common"
 	"github.com/deepflowio/deepflow/server/ingester/profile/dbwriter"
 	"github.com/deepflowio/deepflow/server/libs/codec"
 	"github.com/deepflowio/deepflow/server/libs/datatype"
@@ -84,27 +85,29 @@ var eBPFEventType = map[pb.ProfileEventType]string{
 }
 
 type Decoder struct {
-	index         int
-	msgType       datatype.MessageType
-	platformData  *grpc.PlatformInfoTable
-	inQueue       queue.QueueReader
-	profileWriter *dbwriter.ProfileWriter
+	index           int
+	msgType         datatype.MessageType
+	platformData    *grpc.PlatformInfoTable
+	inQueue         queue.QueueReader
+	profileWriter   *dbwriter.ProfileWriter
+	compressionAlgo string
 
 	counter *Counter
 	utils.Closable
 }
 
-func NewDecoder(index int, msgType datatype.MessageType,
+func NewDecoder(index int, msgType datatype.MessageType, compressionAlgo string,
 	platformData *grpc.PlatformInfoTable,
 	inQueue queue.QueueReader,
 	profileWriter *dbwriter.ProfileWriter) *Decoder {
 	return &Decoder{
-		index:         index,
-		msgType:       msgType,
-		platformData:  platformData,
-		inQueue:       inQueue,
-		profileWriter: profileWriter,
-		counter:       &Counter{},
+		index:           index,
+		msgType:         msgType,
+		platformData:    platformData,
+		inQueue:         inQueue,
+		profileWriter:   profileWriter,
+		compressionAlgo: compressionAlgo,
+		counter:         &Counter{},
 	}
 }
 
@@ -156,15 +159,16 @@ func (d *Decoder) handleProfileData(vtapID uint16, decoder *codec.SimpleDecoder)
 		}
 
 		parser := &Parser{
-			vtapID:       vtapID,
-			inTimestamp:  time.Now(),
-			callBack:     d.profileWriter.Write,
-			platformData: d.platformData,
-			IP:           make([]byte, len(profile.Ip)),
-			netNsID:      profile.NetnsId,
-			containerID:  string(profile.ContainerId),
-			observer:     &observer{},
-			Counter:      d.counter,
+			vtapID:          vtapID,
+			inTimestamp:     time.Now(),
+			callBack:        d.profileWriter.Write,
+			platformData:    d.platformData,
+			IP:              make([]byte, len(profile.Ip)),
+			netNsID:         profile.NetnsId,
+			containerID:     profile.ContainerId,
+			compressionAlgo: d.compressionAlgo,
+			observer:        &observer{},
+			Counter:         d.counter,
 		}
 		copy(parser.IP, profile.Ip[:len(profile.Ip)])
 
@@ -173,13 +177,18 @@ func (d *Decoder) handleProfileData(vtapID uint16, decoder *codec.SimpleDecoder)
 			atomic.AddInt64(&d.counter.JavaProfileCount, 1)
 			metadata := d.buildMetaData(profile)
 			parser.profileName = metadata.Key.AppName()
-			err := d.sendProfileData(&jfr.RawProfile{
+			decompressJfr, err := profile_common.GzipDecompress(profile.Data)
+			if err != nil {
+				log.Errorf("decompress java profile data failed, offset=%d, len=%d, err=%s", decoder.Offset(), len(decoder.Bytes()), err)
+				return
+			}
+			err = d.sendProfileData(&jfr.RawProfile{
 				FormDataContentType: string(profile.ContentType),
-				RawData:             profile.Data,
+				RawData:             decompressJfr,
 			}, profile.Format, parser, metadata)
 
 			if err != nil {
-				log.Errorf("decode java profile data failed, offset=%d len=%d", decoder.Offset(), len(decoder.Bytes()))
+				log.Errorf("decode java profile data failed, offset=%d, len=%d, err=%s", decoder.Offset(), len(decoder.Bytes()), err)
 				return
 			}
 		case "pprof":
@@ -191,7 +200,7 @@ func (d *Decoder) handleProfileData(vtapID uint16, decoder *codec.SimpleDecoder)
 				RawData:             profile.Data,
 			}, profile.Format, parser, metadata)
 			if err != nil {
-				log.Errorf("decode golang profile data failed, offset=%d len=%d", decoder.Offset(), len(decoder.Bytes()))
+				log.Errorf("decode golang profile data failed, offset=%d, len=%d, err=%s", decoder.Offset(), len(decoder.Bytes()), err)
 				return
 			}
 		case "":
@@ -208,7 +217,7 @@ func (d *Decoder) handleProfileData(vtapID uint16, decoder *codec.SimpleDecoder)
 					PoolStreamingParser: true,
 				}, profile.Format, parser, metadata)
 				if err != nil {
-					log.Errorf("decode golang profile data failed, offset=%d len=%d", decoder.Offset(), len(decoder.Bytes()))
+					log.Errorf("decode golang profile data failed, offset=%d, len=%d, err=%s", decoder.Offset(), len(decoder.Bytes()), err)
 					return
 				}
 			} else {
@@ -222,7 +231,7 @@ func (d *Decoder) handleProfileData(vtapID uint16, decoder *codec.SimpleDecoder)
 					RawData: profile.Data,
 				}, profile.Format, parser, metadata)
 				if err != nil {
-					log.Errorf("decode golang profile data failed, offset=%d len=%d", decoder.Offset(), len(decoder.Bytes()))
+					log.Errorf("decode ebpf profile data failed, offset=%d, len=%d, err=%s", decoder.Offset(), len(decoder.Bytes()), err)
 					return
 				}
 			}

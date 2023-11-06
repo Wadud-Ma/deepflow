@@ -42,6 +42,7 @@ struct socket_bpf_data {
 	uint64_t coroutine_id;	// CoroutineID, i.e., golang goroutine id
 	uint8_t source;		// syscall,go_tls_uprobe,go_http2_uprobe
 	uint8_t process_kname[TASK_COMM_LEN];	// comm in task_struct
+	uint8_t container_id[CONTAINER_ID_SIZE]; // container id
 
 	struct __tuple_t tuple;	// Socket五元组信息
 	uint64_t socket_id;	// Socket的唯一标识，从启动时的时钟开始自增1
@@ -326,4 +327,5 @@ int running_socket_tracer(tracer_callback_t handle,
 int register_event_handle(uint32_t type, void (*fn)(void *));
 int socket_tracer_stop(void);
 int socket_tracer_start(void);
+enum tracer_state get_socket_tracer_state(void);
 #endif /* DF_USER_SOCKET_H */

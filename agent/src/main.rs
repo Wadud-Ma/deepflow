@@ -20,7 +20,7 @@ use std::path::Path;
 use anyhow::Result;
 use clap::{ArgAction, Parser};
 use log::error;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "android"))]
 use signal_hook::{consts::TERM_SIGNALS, iterator::Signals};
 
 use ::deepflow_agent::*;
@@ -28,7 +28,12 @@ use ::deepflow_agent::*;
 #[derive(Parser)]
 struct Opts {
     /// Specify config file location
-    #[clap(short = 'f', long, default_value = "/etc/deepflow-agent.yaml")]
+    #[clap(
+        short = 'f',
+        visible_short_alias = 'c',
+        long,
+        default_value = "/etc/deepflow-agent.yaml"
+    )]
     config_file: String,
 
     /// Enable standalone mode, default config path is /etc/deepflow-agent-standalone.yaml

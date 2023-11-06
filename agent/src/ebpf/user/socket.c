@@ -57,6 +57,7 @@ static volatile uint64_t probes_act;
 
 extern int sys_cpus_count;
 extern bool *cpu_online;
+extern uint32_t attach_failed_count;
 
 static int infer_socktrace_fd;
 static uint32_t conf_max_socket_entries;
@@ -506,12 +507,13 @@ static inline bool need_proto_reconfirm(uint16_t l7_proto)
 static void process_event(struct process_event_t *e)
 {
 	if (e->meta.event_type == EVENT_TYPE_PROC_EXEC) {
+		update_proc_info_cache(e->pid, PROC_EXEC);
 		go_process_exec(e->pid);
 		ssl_process_exec(e->pid);
 	} else if (e->meta.event_type == EVENT_TYPE_PROC_EXIT) {
 		/* Cache for updating process information used in
 		 * symbol resolution. */
-		update_symbol_cache(e->pid);
+		update_proc_info_cache(e->pid, PROC_EXIT);
 		go_process_exit(e->pid);
 		ssl_process_exit(e->pid);
 	}
@@ -736,6 +738,9 @@ static void reader_raw_cb(void *t, void *raw, int raw_size)
 			      sizeof(sd->comm));
 		submit_data->process_kname[sizeof(submit_data->process_kname) -
 					   1] = '\0';
+		get_container_id_from_procs_cache(sd->tgid,
+						  submit_data->container_id,
+						  sizeof(submit_data->container_id));
 		submit_data->msg_type = sd->msg_type;
 		submit_data->socket_role = sd->socket_role;
 
@@ -967,7 +972,7 @@ static int check_kern_adapt_and_state_update(void)
 	if (t == NULL)
 		return -1;
 
-	if (is_adapt_success(t)) {
+	if (is_adapt_success(t) && attach_failed_count == 0) {
 		ebpf_info("[eBPF Kernel Adapt] Linux %s adapt success. "
 			  "Set the status to TRACER_RUNNING\n", linux_release);
 		t->state = TRACER_RUNNING;
@@ -1768,6 +1773,9 @@ int running_socket_tracer(tracer_callback_t handle,
 	memset(tps, 0, sizeof(*tps));
 	init_list_head(&tps->uprobe_syms_head);
 	socket_tracer_set_probes(tps);
+
+	create_and_init_proc_info_caches();
+
 	struct bpf_tracer *tracer =
 	     setup_bpf_tracer(SK_TRACER_NAME, bpf_load_buffer_name,
 			      bpf_bin_buffer, buffer_sz, tps,
@@ -1889,12 +1897,14 @@ int running_socket_tracer(tracer_callback_t handle,
 
 	if ((ret =
 	     register_period_event_op("check-map-exceeded",
-				      check_map_exceeded)))
+				      check_map_exceeded,
+				      CHECK_MAP_EXCEEDED_PERIOD)))
 		return ret;
 
 	if ((ret =
 	     register_period_event_op("check-kern-adapt",
-				      check_kern_adapt_and_state_update)))
+				      check_kern_adapt_and_state_update,
+				      CHECK_KERN_ADAPT_PERIOD)))
 		return ret;
 
 	if ((ret = sockopt_register(&socktrace_sockopts)) != ETR_OK)
@@ -1966,6 +1976,15 @@ int socket_tracer_start(void)
 	add_probes_act(ACT_ATTACH);
 
 	return 0;
+}
+
+enum tracer_state __unused get_socket_tracer_state(void)
+{
+	struct bpf_tracer *t = find_bpf_tracer(SK_TRACER_NAME);
+	if (t == NULL) 
+		return TRACER_STOP_ERR;
+
+	return t->state;
 }
 
 static bool bpf_stats_map_collect(struct bpf_tracer *tracer,
@@ -2401,31 +2420,37 @@ static void print_socket_data(struct socket_bpf_data *sd)
 	if (sd->l7_protocal_hint == PROTO_HTTP1) {
 		fprintf(datadump_file, "\n+-----------------------------+\n"
 			"%s <%s> DIR %s TYPE %s(%d) PID %u THREAD_ID %u "
-			"COROUTINE_ID %" PRIu64 " SOURCE %d COMM %s "
+			"COROUTINE_ID %" PRIu64 " CONTAINER_ID %s SOURCE %d COMM %s "
 			"%s LEN %d SYSCALL_LEN %" PRIu64 " SOCKET_ID %" PRIu64
 			" " "TRACE_ID %" PRIu64 " TCP_SEQ %" PRIu64
 			" DATA_SEQ %" PRIu64 " " "TimeStamp %" PRIu64 "\n%s",
 			timestamp, proto_tag,
 			sd->direction == T_EGRESS ? "out" : "in", type,
 			sd->msg_type, sd->process_id, sd->thread_id,
-			sd->coroutine_id, sd->source, sd->process_kname,
-			flow_str, sd->cap_len, sd->syscall_len, sd->socket_id,
-			sd->syscall_trace_id_call, sd->tcp_seq, sd->cap_seq,
-			sd->timestamp, sd->cap_data);
+			sd->coroutine_id,
+			strlen((char *)sd->container_id) == 0 ? "null" :
+				(char *)sd->container_id,
+			sd->source,
+			sd->process_kname, flow_str, sd->cap_len, sd->syscall_len,
+			sd->socket_id, sd->syscall_trace_id_call, sd->tcp_seq,
+			sd->cap_seq, sd->timestamp, sd->cap_data);
 	} else {
 		fprintf(datadump_file, "\n+-----------------------------+\n"
 			"%s <%s> DIR %s TYPE %s(%d) PID %u THREAD_ID %u "
-			"COROUTINE_ID %" PRIu64 " SOURCE %d COMM %s "
+			"COROUTINE_ID %" PRIu64 " CONTAINER_ID %s SOURCE %d COMM %s "
 			"%s LEN %d SYSCALL_LEN %" PRIu64 " SOCKET_ID %" PRIu64
 			" " "TRACE_ID %" PRIu64 " TCP_SEQ %" PRIu64
 			" DATA_SEQ %" PRIu64 " " "TimeStamp %" PRIu64 "\n",
 			timestamp, proto_tag,
 			sd->direction == T_EGRESS ? "out" : "in", type,
 			sd->msg_type, sd->process_id, sd->thread_id,
-			sd->coroutine_id, sd->source, sd->process_kname,
-			flow_str, sd->cap_len, sd->syscall_len, sd->socket_id,
-			sd->syscall_trace_id_call, sd->tcp_seq, sd->cap_seq,
-			sd->timestamp);
+			sd->coroutine_id,
+			strlen((char *)sd->container_id) == 0 ? "null" :
+				(char *)sd->container_id,
+			sd->source,
+			sd->process_kname, flow_str, sd->cap_len, sd->syscall_len,
+			sd->socket_id, sd->syscall_trace_id_call, sd->tcp_seq,
+			sd->cap_seq, sd->timestamp);
 
 		if (sd->source == 2) {
 			print_uprobe_http2_info(sd->cap_data, sd->cap_len);

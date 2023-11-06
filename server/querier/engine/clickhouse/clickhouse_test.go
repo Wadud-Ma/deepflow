@@ -79,19 +79,19 @@ var (
 		output: "SELECT divide(MAX(byte_tx)+1e-15, MIN(byte_tx)+1e-15) AS `rspread_byte_tx` FROM flow_log.`l4_flow_log` PREWHERE `time` >= 60 AND `time` <= 180 LIMIT 1",
 	}, {
 		input:  "select Rspread(rtt) as rspread_rtt from l4_flow_log limit 1",
-		output: "SELECT divide(MAXIf(rtt, rtt > 0)+1e-15, MINIf(rtt, rtt > 0)+1e-15) AS `rspread_rtt` FROM flow_log.`l4_flow_log` LIMIT 1",
+		output: "SELECT divide(MAXIf(rtt, rtt >= 0)+1e-15, MINIf(rtt, rtt >= 0)+1e-15) AS `rspread_rtt` FROM flow_log.`l4_flow_log` LIMIT 1",
 	}, {
 		input:  "select Percentile(byte_tx, 50) as percentile_byte_tx from l4_flow_log limit 1",
 		output: "SELECT quantile(50)(byte_tx) AS `percentile_byte_tx` FROM flow_log.`l4_flow_log` LIMIT 1",
 	}, {
 		input:  "select Avg(rtt) as avg_rtt from l4_flow_log where time >= 100+1 and time <= 102 limit 1",
-		output: "SELECT AVGIf(rtt, rtt > 0) AS `avg_rtt` FROM flow_log.`l4_flow_log` PREWHERE `time` >= 100 + 1 AND `time` <= 102 LIMIT 1",
+		output: "SELECT AVGIf(rtt, rtt >= 0) AS `avg_rtt` FROM flow_log.`l4_flow_log` PREWHERE `time` >= 100 + 1 AND `time` <= 102 LIMIT 1",
 	}, {
 		input:  "select Max(byte_tx) as max_byte_tx, Avg(rtt) as avg_rtt from l4_flow_log limit 1",
-		output: "SELECT MAX(byte_tx) AS `max_byte_tx`, AVGIf(rtt, rtt > 0) AS `avg_rtt` FROM flow_log.`l4_flow_log` LIMIT 1",
+		output: "SELECT MAX(byte_tx) AS `max_byte_tx`, AVGIf(rtt, rtt >= 0) AS `avg_rtt` FROM flow_log.`l4_flow_log` LIMIT 1",
 	}, {
 		input:  "select ((Max(byte_tx))+Avg(rtt ))/(1-Avg(rtt )) as avg_rtt from l4_flow_log limit 1",
-		output: "SELECT divide(plus(MAX(byte_tx), AVGIf(rtt, rtt > 0)), minus(1, AVGIf(rtt, rtt > 0))) AS `avg_rtt` FROM flow_log.`l4_flow_log` LIMIT 1",
+		output: "SELECT divide(plus(MAX(byte_tx), AVGIf(rtt, rtt >= 0)), minus(1, AVGIf(rtt, rtt >= 0))) AS `avg_rtt` FROM flow_log.`l4_flow_log` LIMIT 1",
 	}, {
 		input:  "select Apdex(rtt, 100) as apdex_rtt_100 from l4_flow_log limit 1",
 		output: "WITH if(COUNT()>0, divide(plus(SUM(if(rtt<=100,1,0)), SUM(if(100<rtt AND rtt<=100*4,0.5,0))), COUNT()), null) AS `divide_0diveider_as_null_plus_apdex_satisfy_rtt_100_apdex_toler_rtt_100_count_` SELECT `divide_0diveider_as_null_plus_apdex_satisfy_rtt_100_apdex_toler_rtt_100_count_`*100 AS `apdex_rtt_100` FROM flow_log.`l4_flow_log` LIMIT 1",
@@ -109,7 +109,7 @@ var (
 		output: "SELECT divide(plus(MAX(byte_tx+byte_rx), 100), 100)*100 AS `percentage_max_byte_100` FROM flow_log.`l4_flow_log` LIMIT 1",
 	}, {
 		input:  "select Sum(rtt) as sum_rtt from l4_flow_log having Percentage(Max(byte), 100) >= 1 limit 1",
-		output: "SELECT SUMIf(rtt, rtt > 0) AS `sum_rtt` FROM flow_log.`l4_flow_log` HAVING divide(MAX(byte_tx+byte_rx), 100)*100 >= 1 LIMIT 1",
+		output: "SELECT SUMIf(rtt, rtt >= 0) AS `sum_rtt` FROM flow_log.`l4_flow_log` HAVING divide(MAX(byte_tx+byte_rx), 100)*100 >= 1 LIMIT 1",
 	}, {
 		input:  "select time(time, 60) as toi, PerSecond(Sum(byte)+100) as persecond_max_byte_100 from l4_flow_log group by toi limit 1",
 		output: "WITH toStartOfInterval(time, toIntervalSecond(60)) + toIntervalSecond(arrayJoin([0]) * 60) AS `_toi` SELECT toUnixTimestamp(`_toi`) AS `toi`, divide(plus(SUM(byte_tx+byte_rx), 100), 60) AS `persecond_max_byte_100` FROM flow_log.`l4_flow_log` GROUP BY `toi` LIMIT 1",
@@ -159,7 +159,7 @@ var (
 		db:     "ext_metrics",
 	}, {
 		input:  "select Sum(`metrics.pending`) from `deepflow_server.queue`",
-		output: "SELECT SUM(if(indexOf(metrics_float_names, 'pending')=0,null,metrics_float_values[indexOf(metrics_float_names, 'pending')])) AS `Sum(metrics.pending)` FROM deepflow_system.`deepflow_server.queue` LIMIT 10000",
+		output: "SELECT SUM(if(indexOf(metrics_float_names, 'pending')=0,null,metrics_float_values[indexOf(metrics_float_names, 'pending')])) AS `Sum(metrics.pending)` FROM deepflow_system.`deepflow_system` PREWHERE (virtual_table_name='deepflow_server.queue') LIMIT 10000",
 		db:     "deepflow_system",
 	}, {
 		input:  "select `k8s.label_0` from l7_flow_log",
@@ -219,11 +219,11 @@ var (
 		db:     "flow_metrics",
 	}, {
 		input:  "SELECT time(time,5,1,0) as toi, Avg(`metrics.dropped`) AS `Avg(metrics.dropped)` FROM `deepflow_agent_collect_sender` GROUP BY  toi ORDER BY toi desc",
-		output: "WITH toStartOfInterval(time, toIntervalSecond(10)) + toIntervalSecond(arrayJoin([0]) * 10) AS `_toi` SELECT toUnixTimestamp(`_toi`) AS `toi`, AVG(if(indexOf(metrics_float_names, 'dropped')=0,null,metrics_float_values[indexOf(metrics_float_names, 'dropped')])) AS `Avg(metrics.dropped)` FROM deepflow_system.`deepflow_agent_collect_sender` GROUP BY `toi` ORDER BY `toi` desc LIMIT 10000",
+		output: "WITH toStartOfInterval(time, toIntervalSecond(10)) + toIntervalSecond(arrayJoin([0]) * 10) AS `_toi` SELECT toUnixTimestamp(`_toi`) AS `toi`, AVG(if(indexOf(metrics_float_names, 'dropped')=0,null,metrics_float_values[indexOf(metrics_float_names, 'dropped')])) AS `Avg(metrics.dropped)` FROM deepflow_system.`deepflow_system` PREWHERE (virtual_table_name='deepflow_agent_collect_sender') GROUP BY `toi` ORDER BY `toi` desc LIMIT 10000",
 		db:     "deepflow_system",
 	}, {
 		input:  "SELECT time(time,120,1,0) as toi, Avg(`metrics.dropped`) AS `Avg(metrics.dropped)` FROM `deepflow_agent_collect_sender` GROUP BY  toi ORDER BY toi desc",
-		output: "WITH toStartOfInterval(time, toIntervalSecond(120)) + toIntervalSecond(arrayJoin([0]) * 120) AS `_toi` SELECT toUnixTimestamp(`_toi`) AS `toi`, AVG(if(indexOf(metrics_float_names, 'dropped')=0,null,metrics_float_values[indexOf(metrics_float_names, 'dropped')])) AS `Avg(metrics.dropped)` FROM deepflow_system.`deepflow_agent_collect_sender` GROUP BY `toi` ORDER BY `toi` desc LIMIT 10000",
+		output: "WITH toStartOfInterval(time, toIntervalSecond(120)) + toIntervalSecond(arrayJoin([0]) * 120) AS `_toi` SELECT toUnixTimestamp(`_toi`) AS `toi`, AVG(if(indexOf(metrics_float_names, 'dropped')=0,null,metrics_float_values[indexOf(metrics_float_names, 'dropped')])) AS `Avg(metrics.dropped)` FROM deepflow_system.`deepflow_system` PREWHERE (virtual_table_name='deepflow_agent_collect_sender') GROUP BY `toi` ORDER BY `toi` desc LIMIT 10000",
 		db:     "deepflow_system",
 	}, {
 		input:  "SELECT chost_id_0 from l4_flow_log WHERE NOT exist(chost_0) LIMIT 1",
@@ -261,6 +261,9 @@ var (
 	}, {
 		input:  "SELECT node_type(is_internet_0) as `client_node_type` , icon_id(is_internet_0) as `client_icon_id`,  node_type(is_internet_1) as `server_node_type`, is_internet_0, is_internet_1 FROM l4_flow_log GROUP BY is_internet_0, is_internet_1 limit 1",
 		output: "WITH if(l3_epc_id_0=-2,dictGet(flow_tag.device_map, 'icon_id', (toUInt64(63999),toUInt64(63999))),0) AS `client_icon_id` SELECT if(l3_epc_id_0=-2,'internet','') AS `client_node_type`, `client_icon_id`, if(l3_epc_id_1=-2,'internet','') AS `server_node_type`, if(l3_epc_id_0=-2,1,0) AS `is_internet_0`, if(l3_epc_id_1=-2,1,0) AS `is_internet_1` FROM flow_log.`l4_flow_log` GROUP BY `client_node_type`, `client_icon_id`, `server_node_type`, if(l3_epc_id_0=-2,1,0) AS `is_internet_0`, if(l3_epc_id_1=-2,1,0) AS `is_internet_1` LIMIT 1",
+	}, {
+		input:  "select Enum(pod_group_type_0) ,pod_group_type_0 from l7_flow_log where Enum(pod_group_type_0)!='Deployment' limit 10",
+		output: "WITH dictGetOrDefault(flow_tag.int_enum_map, 'name', ('pod_group_type',toUInt64(dictGet(flow_tag.pod_group_map, 'pod_group_type', (toUInt64(pod_group_id_0))))), dictGet(flow_tag.pod_group_map, 'pod_group_type', (toUInt64(pod_group_id_0)))) AS `Enum(pod_group_type_0)` SELECT `Enum(pod_group_type_0)`, dictGet(flow_tag.pod_group_map, 'pod_group_type', (toUInt64(pod_group_id_0))) AS `pod_group_type_0` FROM flow_log.`l7_flow_log` PREWHERE (not(toUInt64(dictGet(flow_tag.pod_group_map, 'pod_group_type', (toUInt64(pod_group_id_0)))) IN (SELECT value FROM flow_tag.int_enum_map WHERE name = 'Deployment' and tag_name='pod_group_type') AND pod_group_id_0!=0)) LIMIT 10",
 	}, {
 		index:  "count_1",
 		input:  "select Count(row) as a from l7_flow_log having a > 0 ",
@@ -317,6 +320,24 @@ var (
 		index:  "layered_0",
 		input:  "select Avg(`byte_tx`) AS `Avg(byte_tx)`, region_0 from vtap_flow_edge_port group by region_0 limit 1",
 		output: "SELECT region_0, AVG(`_sum_byte_tx`) AS `Avg(byte_tx)` FROM (SELECT dictGet(flow_tag.region_map, 'name', (toUInt64(region_id_0))) AS `region_0`, SUM(byte_tx) AS `_sum_byte_tx` FROM flow_metrics.`vtap_flow_edge_port` GROUP BY dictGet(flow_tag.region_map, 'name', (toUInt64(region_id_0))) AS `region_0`) GROUP BY `region_0` LIMIT 1",
+		db:     "flow_metrics",
+	}, {
+		index:  "division>=0_l4_flow_log",
+		input:  "select Avg(`l7_error_ratio`) AS `Avg(l7_error_ratio)`, Avg(`retrans_syn_ratio`) AS `Avg(retrans_syn_ratio)`, Avg(`retrans_synack_ratio`) AS `Avg(retrans_synack_ratio)`, Avg(`l7_client_error_ratio`) AS `Avg(l7_client_error_ratio)`, Avg(`l7_server_error_ratio`) AS `Avg(l7_server_error_ratio)`, auto_service_id from l4_flow_log group by auto_service_id limit 1",
+		output: "SELECT if(auto_service_type in (0,255),subnet_id,auto_service_id) AS `auto_service_id`, AVGIf(l7_error/l7_response, l7_error/l7_response>=0)*100 AS `Avg(l7_error_ratio)`, AVGIf(retrans_syn/syn_count, retrans_syn/syn_count>=0)*100 AS `Avg(retrans_syn_ratio)`, AVGIf(retrans_synack/synack_count, retrans_synack/synack_count>=0)*100 AS `Avg(retrans_synack_ratio)`, AVGIf(l7_client_error/l7_response, l7_client_error/l7_response>=0)*100 AS `Avg(l7_client_error_ratio)`, AVGIf(l7_server_error/l7_response, l7_server_error/l7_response>=0)*100 AS `Avg(l7_server_error_ratio)` FROM flow_log.`l4_flow_log` GROUP BY if(auto_service_type in (0,255),subnet_id,auto_service_id) AS `auto_service_id` LIMIT 1",
+	}, {
+		index:  "division>=0_l7_flow_log",
+		input:  "select Avg(`error_ratio`) AS `Avg(error_ratio)`, auto_service_id from l7_flow_log group by auto_service_id limit 1",
+		output: "SELECT if(auto_service_type in (0,255),subnet_id,auto_service_id) AS `auto_service_id`, AVGIf(if(response_status IN [4, 3],1,0)/if(type IN [1, 2],1,0), if(response_status IN [4, 3],1,0)/if(type IN [1, 2],1,0)>=0)*100 AS `Avg(error_ratio)` FROM flow_log.`l7_flow_log` GROUP BY if(auto_service_type in (0,255),subnet_id,auto_service_id) AS `auto_service_id` LIMIT 1",
+	}, {
+		index:  "division>=0_vtap_app_port",
+		input:  "select Avg(`rrt`) AS `Avg(rrt)`, Avg(`error_ratio`) AS `Avg(error_ratio)`, auto_service_id from vtap_app_port group by auto_service_id limit 1",
+		output: "SELECT auto_service_id, AVGArray(arrayFilter(x -> x>=0, `_grouparray_rrt_sum/rrt_count`)) AS `Avg(rrt)`, AVG(`_div__sum_error__sum_response`)*100 AS `Avg(error_ratio)` FROM (WITH if(SUM(response)>0, divide(SUM(error), SUM(response)), null) AS `divide_0diveider_as_null_sum_error_sum_response` SELECT if(auto_service_type in (0,255),subnet_id,auto_service_id) AS `auto_service_id`, groupArrayIf(rrt_sum/rrt_count, rrt_sum/rrt_count >= 0) AS `_grouparray_rrt_sum/rrt_count`, `divide_0diveider_as_null_sum_error_sum_response` AS `_div__sum_error__sum_response` FROM flow_metrics.`vtap_app_port` GROUP BY if(auto_service_type in (0,255),subnet_id,auto_service_id) AS `auto_service_id`) GROUP BY `auto_service_id` LIMIT 1",
+		db:     "flow_metrics",
+	}, {
+		index:  "division>=0_vtap_flow_edge_port",
+		input:  "select Avg(`bpp`) AS `Avg(bpp)`, Avg(`retrans_syn_ratio`) AS `Avg(retrans_syn_ratio)`, auto_service_id from vtap_flow_edge_port group by auto_service_id limit 1",
+		output: "SELECT auto_service_id, AVGIf(`_div__sum_byte__sum_packet`, `_div__sum_byte__sum_packet` >= 0) AS `Avg(bpp)`, AVG(`_div__sum_retrans_syn__sum_syn_count`)*100 AS `Avg(retrans_syn_ratio)` FROM (WITH if(SUM(packet)>0, divide(SUM(byte), SUM(packet)), null) AS `divide_0diveider_as_null_sum_byte_sum_packet`, if(SUM(syn_count)>0, divide(SUM(retrans_syn), SUM(syn_count)), null) AS `divide_0diveider_as_null_sum_retrans_syn_sum_syn_count` SELECT if(auto_service_type in (0,255),subnet_id,auto_service_id) AS `auto_service_id`, `divide_0diveider_as_null_sum_byte_sum_packet` AS `_div__sum_byte__sum_packet`, `divide_0diveider_as_null_sum_retrans_syn_sum_syn_count` AS `_div__sum_retrans_syn__sum_syn_count` FROM flow_metrics.`vtap_flow_edge_port` GROUP BY if(auto_service_type in (0,255),subnet_id,auto_service_id) AS `auto_service_id`) GROUP BY `auto_service_id` LIMIT 1",
 		db:     "flow_metrics",
 	}}
 )

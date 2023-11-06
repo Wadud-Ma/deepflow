@@ -112,7 +112,7 @@ impl KafkaInfo {
         if other.status != L7ResponseStatus::default() {
             self.status = other.status;
         }
-        if other.status_code != None {
+        if other.status_code.is_some() {
             self.status_code = other.status_code;
         }
         if self.publish_topic.is_none() && other.publish_topic != None{
@@ -587,15 +587,19 @@ impl KafkaLog {
         if proto != IpProtocol::TCP {
             return Err(Error::InvalidIpProtocol);
         }
-        if payload.len() < KAFKA_REQ_HEADER_LEN {
-            return Err(Error::KafkaLogParseFailed);
-        }
+
         match direction {
             PacketDirection::ClientToServer => {
+                if payload.len() < KAFKA_REQ_HEADER_LEN {
+                    return Err(Error::KafkaLogParseFailed);
+                }
                 self.request(payload, false, info)?;
                 self.perf_stats.as_mut().map(|p| p.inc_req());
             }
             PacketDirection::ServerToClient => {
+                if payload.len() < KAFKA_RESP_HEADER_LEN {
+                    return Err(Error::KafkaLogParseFailed);
+                }
                 self.response(payload, info)?;
                 self.perf_stats.as_mut().map(|p| p.inc_resp());
             }

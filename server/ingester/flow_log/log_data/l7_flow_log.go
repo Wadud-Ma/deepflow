@@ -81,6 +81,8 @@ type L7Base struct {
 	SyscallTraceIDResponse uint64
 	SyscallThread0         uint32
 	SyscallThread1         uint32
+	SyscallCoroutine0      uint64
+	SyscallCoroutine1      uint64
 	SyscallCapSeq0         uint32
 	SyscallCapSeq1         uint32
 }
@@ -130,6 +132,8 @@ func L7BaseColumns() []*ckdb.Column {
 		ckdb.NewColumn("syscall_trace_id_response", ckdb.UInt64).SetComment("SyscallTraceID-响应"),
 		ckdb.NewColumn("syscall_thread_0", ckdb.UInt32).SetComment("Syscall线程-请求"),
 		ckdb.NewColumn("syscall_thread_1", ckdb.UInt32).SetComment("Syscall线程-响应"),
+		ckdb.NewColumn("syscall_coroutine_0", ckdb.UInt64).SetComment("Request Syscall Coroutine"),
+		ckdb.NewColumn("syscall_coroutine_1", ckdb.UInt64).SetComment("Response Syscall Coroutine"),
 		ckdb.NewColumn("syscall_cap_seq_0", ckdb.UInt32).SetComment("Syscall序列号-请求"),
 		ckdb.NewColumn("syscall_cap_seq_1", ckdb.UInt32).SetComment("Syscall序列号-响应"),
 	)
@@ -177,6 +181,8 @@ func (f *L7Base) WriteBlock(block *ckdb.Block) {
 		f.SyscallTraceIDResponse,
 		f.SyscallThread0,
 		f.SyscallThread1,
+		f.SyscallCoroutine0,
+		f.SyscallCoroutine1,
 		f.SyscallCapSeq0,
 		f.SyscallCapSeq1)
 }
@@ -191,6 +197,7 @@ type L7FlowLog struct {
 	L7ProtocolStr string
 	Version       string
 	Type          uint8
+	IsTLS         uint8
 
 	RequestType     string
 	RequestDomain   string
@@ -243,6 +250,7 @@ func L7FlowLogColumns() []*ckdb.Column {
 		ckdb.NewColumn("l7_protocol_str", ckdb.LowCardinalityString).SetIndex(ckdb.IndexNone).SetComment("应用协议"),
 		ckdb.NewColumn("version", ckdb.LowCardinalityString).SetComment("协议版本"),
 		ckdb.NewColumn("type", ckdb.UInt8).SetIndex(ckdb.IndexNone).SetComment("日志类型, 0:请求, 1:响应, 2:会话"),
+		ckdb.NewColumn("is_tls", ckdb.UInt8),
 
 		ckdb.NewColumn("request_type", ckdb.LowCardinalityString).SetComment("请求类型, HTTP请求方法、SQL命令类型、NoSQL命令类型、MQ命令类型、DNS查询类型"),
 		ckdb.NewColumn("request_domain", ckdb.String).SetComment("请求域名, HTTP主机名、RPC服务名称、DNS查询域名"),
@@ -256,9 +264,9 @@ func L7FlowLogColumns() []*ckdb.Column {
 		ckdb.NewColumn("response_result", ckdb.String).SetComment("响应结果, DNS解析地址"),
 
 		ckdb.NewColumn("http_proxy_client", ckdb.String).SetComment("HTTP代理客户端"),
-		ckdb.NewColumn("x_request_id_0", ckdb.String).SetComment("XRequestID0"),
-		ckdb.NewColumn("x_request_id_1", ckdb.String).SetComment("XRequestID1"),
-		ckdb.NewColumn("trace_id", ckdb.String).SetComment("TraceID"),
+		ckdb.NewColumn("x_request_id_0", ckdb.String).SetIndex(ckdb.IndexBloomfilter).SetComment("XRequestID0"),
+		ckdb.NewColumn("x_request_id_1", ckdb.String).SetIndex(ckdb.IndexBloomfilter).SetComment("XRequestID1"),
+		ckdb.NewColumn("trace_id", ckdb.String).SetIndex(ckdb.IndexBloomfilter).SetComment("TraceID"),
 		ckdb.NewColumn("span_id", ckdb.String).SetComment("SpanID"),
 		ckdb.NewColumn("parent_span_id", ckdb.String).SetComment("ParentSpanID"),
 		ckdb.NewColumn("span_kind", ckdb.UInt8Nullable).SetComment("SpanKind"),
@@ -288,12 +296,14 @@ func (h *L7FlowLog) WriteBlock(block *ckdb.Block) {
 		h.L7ProtocolStr,
 		h.Version,
 		h.Type,
+		h.IsTLS,
+
 		h.RequestType,
 		h.RequestDomain,
 		h.RequestResource,
 		h.Endpoint,
-
 		h.RequestId,
+
 		h.ResponseStatus,
 		h.ResponseCode,
 		h.ResponseException,
@@ -342,6 +352,7 @@ func (h *L7FlowLog) Fill(l *pb.AppProtoLogsData, platformData *grpc.PlatformInfo
 	} else {
 		h.L7ProtocolStr = datatype.L7Protocol(h.L7Protocol).String()
 	}
+	h.IsTLS = uint8(l.Flags & 0x1)
 
 	h.ResponseStatus = uint8(datatype.STATUS_NOT_EXIST)
 	h.ResponseDuration = l.Base.Head.Rrt / uint64(time.Microsecond)
@@ -427,7 +438,7 @@ func (h *L7FlowLog) fillL7FlowLog(l *pb.AppProtoLogsData) {
 			}
 			h.RequestId = &h.requestId
 		}
-	case datatype.L7_PROTOCOL_PROTOBUF_RPC, datatype.L7_PROTOCOL_SOFARPC:
+	case datatype.L7_PROTOCOL_SOFARPC:
 		// assume protobuf and sofa rpc Always have request_id and maybe equal to 0
 		h.RequestId = &h.requestId
 	}
@@ -538,6 +549,8 @@ func (b *L7Base) Fill(log *pb.AppProtoLogsData, platformData *grpc.PlatformInfoT
 	b.SyscallTraceIDResponse = l.SyscallTraceIdResponse
 	b.SyscallThread0 = l.SyscallTraceIdThread_0
 	b.SyscallThread1 = l.SyscallTraceIdThread_1
+	b.SyscallCoroutine0 = l.SyscallCoroutine_0
+	b.SyscallCoroutine1 = l.SyscallCoroutine_1
 	b.SyscallCapSeq0 = l.SyscallCapSeq_0
 	b.SyscallCapSeq1 = l.SyscallCapSeq_1
 

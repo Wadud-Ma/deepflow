@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdbool.h>
 #include <linux/limits.h>	/* ulimit */
@@ -35,6 +35,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <sys/utsname.h>
+#include <pthread.h>
 #include "config.h"
 #include "types.h"
 #include "clib.h"
@@ -42,6 +43,9 @@
 #include "common.h"
 #include "log.h"
 #include "string.h"
+#include "profile/java/config.h"
+
+#define MAXLINE 1024
 
 static u64 g_sys_btime_msecs;
 
@@ -50,33 +54,18 @@ bool is_core_kernel(void)
 	return (access("/sys/kernel/btf/vmlinux", F_OK) == 0);
 }
 
-static int parse_online_cpus(const char *cpu_file, bool ** mask, int *cpu_count)
+int parse_num_range(const char *config_str, int bytes_count,
+		    bool **mask, int *count)
 {
-	int fd, i, n, len, start, end = -1;
+	int i, n, len, start, end = -1;
 	bool *tmp;
-	char buf[1024];
-	if ((fd = open(cpu_file, O_RDONLY | O_CLOEXEC)) < 0) {
-		ebpf_warning("Failed to open file (%s: %d)\n", cpu_file, errno);
-		return -1;
-	}
-
-	len = read(fd, buf, sizeof(buf));
-	close(fd);
-	if (len <= 0) {
-		ebpf_warning("Failed to read file (%s: %d)\n", cpu_file, errno);
-		return -1;
-	}
-
-	if (len >= sizeof(buf)) {
-		ebpf_warning("File is too big %s\n", cpu_file);
-		return -1;
-	}
-
-	for (i = 0; i < len; i++) {
-		if (buf[i] == ',' || buf[i] == '\n') {
+	for (i = 0; i < bytes_count; i++) {
+		if (config_str[i] == ',' || config_str[i] == '\n' ||
+		    config_str[i] == ' ') {
 			continue;
 		}
-		n = sscanf(&buf[i], "%d%n-%d%n", &start, &len, &end, &len);
+
+		n = sscanf(&config_str[i], "%d%n-%d%n", &start, &len, &end, &len);
 		if (n <= 0 || n > 2) {
 			goto failed;
 		} else if (n == 1) {
@@ -90,14 +79,15 @@ static int parse_online_cpus(const char *cpu_file, bool ** mask, int *cpu_count)
 		if (!tmp) {
 			goto failed;
 		}
+
 		*mask = tmp;
-		memset(tmp + *cpu_count, 0, start - *cpu_count);
+		memset(tmp + *count, 0, start - *count);
 		memset(tmp + start, 1, end - start + 1);
-		*cpu_count = end + 1;
+		*count = end + 1;
 		i += (len - 1);
 	}
 
-	if (*cpu_count == 0) {
+	if (*count == 0) {
 		goto failed;
 	}
 
@@ -109,8 +99,32 @@ failed:
 		*mask = NULL;
 	}
 
-	*cpu_count = 0;
+	*count = 0;
 	return -1;
+}
+
+static int parse_online_cpus(const char *cpu_file, bool ** mask, int *cpu_count)
+{
+	int fd, len;
+	char buf[1024];
+	if ((fd = open(cpu_file, O_RDONLY | O_CLOEXEC)) < 0) {
+		ebpf_warning("Failed to open file (%s: %d)\n", cpu_file, errno);
+		return -1;
+	}
+
+	len = read(fd, buf, sizeof(buf));
+	close(fd);
+	if (len <= 0) {
+		ebpf_warning("Failed to read file (%s: %d)\n", cpu_file, errno);
+		return -1;
+	}
+
+	if (len > sizeof(buf)) {
+		ebpf_warning("File is too big %s\n", cpu_file);
+		return -1;
+	}
+
+	return parse_num_range(buf, len, mask, cpu_count);
 }
 
 int get_cpus_count(bool ** mask)
@@ -164,7 +178,6 @@ uint32_t get_sys_uptime(void)
 static void exec_clear_residual_probes(const char *events_file,
 				       const char *type_name)
 {
-#define MAXLINE 1024
 	struct probe_elem {
 		struct list_head list;
 		char event[MAXLINE];
@@ -522,6 +535,18 @@ int fetch_kernel_version(int *major, int *minor, int *patch)
 	uname(&sys_info);
 	if (sscanf(sys_info.release, "%u.%u.%u", major, minor, patch) != 3)
 		return ETR_INVAL;
+
+	// Get the real version of Debian
+	//#1 SMP Debian 4.19.289-2 (2023-08-08)
+	if (strstr(sys_info.version, "Debian")) {
+		int num;
+		if ((sscanf(sys_info.version, "%*s %*s %*s %u.%u.%u-%u %*s",
+			    major, minor, patch, &num) != 4) &&
+		    (sscanf(sys_info.version, "%*s %*s %*s %*s %u.%u.%u-%u %*s",
+			    major, minor, patch, &num) != 4)
+		    )
+			return ETR_INVAL;
+	}
 
 	return ETR_OK;
 }
@@ -932,7 +957,7 @@ int exec_command(const char *cmd, const char *args)
 {
 	FILE *fp;
 	int rc = 0;
-	char cmd_buf[64];
+	char cmd_buf[PERF_PATH_SZ * 2];
 	snprintf(cmd_buf, sizeof(cmd_buf), "%s %s", cmd, args);
 	fp = popen(cmd_buf, "r");
 	if (NULL == fp) {
@@ -954,8 +979,6 @@ int exec_command(const char *cmd, const char *args)
 			     cmd_buf, strerror(errno));
 	} else {
 		if (WIFEXITED(rc)) {
-			ebpf_info("'%s' normal termination, exit status %d\n",
-				  cmd_buf, WEXITSTATUS(rc));
 			return WEXITSTATUS(rc);
 		} else if (WIFSIGNALED(rc)) {
 			ebpf_info
@@ -970,50 +993,92 @@ int exec_command(const char *cmd, const char *args)
 	return -1;
 }
 
+int fetch_container_id_from_str(char *buff, char *id, int copy_bytes)
+{
+	static const int cid_len = 64;
+	char *p;
+
+	if ((p = strstr(buff, ".scope")))
+		*p = '\0';
+	else
+		p = buff + strlen(buff);
+
+	if (strlen(buff) < cid_len)
+		return -1;
+
+	p -= cid_len;
+
+	if (strchr(p, '.') || strchr(p, '-') || strchr(p, '/'))
+		return -1;
+
+	if (strlen(p) != cid_len)
+		return -1;
+
+	memset(id, 0, copy_bytes);
+	memcpy_s_inline((void *)id, copy_bytes, (void *)p, cid_len);
+
+	return 0;
+}
+
 int fetch_container_id(pid_t pid, char *id, int copy_bytes)
 {
-	static const int scope_len = 5;
-	static const int cid_len = 64;
-	char file[PATH_MAX], buff[4096];
-	int fd;
+	char file[PATH_MAX], buff[MAXLINE];
 	memset(buff, 0, sizeof(buff));
 	snprintf(file, sizeof(file), "/proc/%d/cgroup", pid);
 	if (access(file, F_OK))
 		return -1;
 
-	fd = open(file, O_RDONLY);
-	if (fd <= 2)
-		return -1;
-
-	read(fd, buff, sizeof(buff));
-	close(fd);
-
-	char *p;
-	if ((p = strchr(buff, '\n')) == NULL)
-		return -1;
-
-	*p = '\0';
-	if (strlen(buff) < (scope_len + 1 + cid_len)) {
+	FILE *fp;
+	char *lf;
+	if ((fp = fopen(file, "r")) == NULL) {
 		return -1;
 	}
 
-	if ((p = strstr(buff, ".scope"))) {
-		*p = '\0';
-		p = strstr(buff, "containerd-");
-		if (p == NULL)
-			return -1;
-		p += strlen("containerd-");
-		goto done;
+	while ((fgets(buff, sizeof(buff), fp)) != NULL) {
+		if ((lf = strchr(buff, '\n')))
+			*lf = '\0';
+		// includes "pids" | "cpuset" | "devices" | "memory" | "cpu"
+		if (strstr(buff, "pids") || strstr(buff, "cpuset")
+		    || strstr(buff, "devices") || strstr(buff, "memory")
+		    || strstr(buff, "cpu")) {
+			break;
+		}
 
-	} else if ((p = strstr(buff, "/docker/"))) {
-		p += strlen("/docker/");
-		goto done;
 	}
 
-	return -1;
-done:
-	if (strlen(p) != cid_len)
-		return -1;
-	memcpy_s_inline((void *)id, copy_bytes, (void *)p, cid_len);
-	return 0;
+	fclose(fp);
+
+	return fetch_container_id_from_str(buff, id, copy_bytes);
 }
+
+#if !defined(AARCH64_MUSL) && !defined(JAVA_AGENT_ATTACH_TOOL)
+int create_work_thread(const char *name, pthread_t *t, void *fn, void *arg)
+{
+	int ret;
+	ret = pthread_create(t, NULL, fn, arg);
+	if (ret) {
+		ebpf_warning("worker name %s is error:%s\n",
+			     name, strerror(errno));
+		return ETR_INVAL;
+	}
+
+	/* set thread name */
+	pthread_setname_np(*t, name);
+
+	/*
+	 * Separating threads is to automatically release
+	 * resources after pthread_exit(), without being
+	 * blocked or stuck.
+	 */
+	ret = pthread_detach(*t);
+	if (ret != 0) {
+		ebpf_warning("Error detaching thread, error:%s\n",
+			     strerror(errno));
+		return ETR_INVAL;
+	} else {
+		ebpf_info("thread %s, detached successful.", name);
+	}
+
+	return ETR_OK;
+}
+#endif /* !defined(AARCH64_MUSL) && !defined(JAVA_AGENT_ATTACH_TOOL) */
