@@ -26,16 +26,16 @@ use crate::{
         error::{Error, Result},
         protocol_logs::{
             consts::KAFKA_REQ_HEADER_LEN,
+            consts::KAFKA_RESP_HEADER_LEN,
             pb_adapter::{ExtendedInfo, L7ProtocolSendLog, L7Request, L7Response},
             value_is_default, value_is_negative, AppProtoHead, L7ResponseStatus, LogMessageType,
         },
     },
     utils::bytes::{read_i16_be, read_u16_be, read_u32_be, read_u8_be},
 };
-use log::info;
 
 const KAFKA_FETCH: u16 = 1;
-const FILTER_TOPIC_ARRAY: [&str; 3] = ["ketrace-test-java-02", "ketrace-php-segment-test", "ketrace-agent-log-test"];
+const FILTER_TOPIC_ARRAY: [&str; 4] = ["ketrace-test-java-02", "ketrace-php-segment-test", "ketrace-agent-log-test", "ketest-dayu-log"];
 
 #[derive(Serialize, Debug, Default, Clone)]
 pub struct KafkaInfo {
@@ -92,6 +92,14 @@ impl L7ProtocolInfoInterface for KafkaInfo {
     fn is_tls(&self) -> bool {
         self.is_tls
     }
+
+    fn skip_send(&self) -> bool {
+        // filter ketrace | agent log
+        if let Some(search_str) = &self.publish_topic {
+            return FILTER_TOPIC_ARRAY.contains(&search_str.as_str());
+        }
+        false
+    }
 }
 
 impl KafkaInfo {
@@ -107,9 +115,13 @@ impl KafkaInfo {
         if other.status_code != None {
             self.status_code = other.status_code;
         }
+        if self.publish_topic.is_none() && other.publish_topic != None{
+            self.publish_topic = other.publish_topic
+        }
     }
 
     pub fn check(&self) -> bool {
+        // todo 校验version
         if self.api_key > Self::API_KEY_MAX {
             return false;
         }
@@ -231,7 +243,7 @@ impl L7ProtocolParserInterface for KafkaLog {
             return false;
         }
         let mut info = KafkaInfo::default();
-        let ok = self.request(payload, true, &mut info, param).is_ok() && info.check();
+        let ok = self.request(payload, true, &mut info).is_ok() && info.check();
         self.reset();
         ok
     }
@@ -241,7 +253,7 @@ impl L7ProtocolParserInterface for KafkaLog {
             self.perf_stats = Some(L7PerfStats::default())
         };
         let mut info = KafkaInfo::default();
-        Self::parse(self, payload, param.l4_protocol, param.direction, &mut info, param)?;
+        Self::parse(self, payload, param.l4_protocol, param.direction, &mut info)?;
 
         // filter message when the request_type field is empty
         let command_str = info.get_command();
@@ -249,42 +261,35 @@ impl L7ProtocolParserInterface for KafkaLog {
             return Ok(L7ParseResult::None);
         }
 
-        // filter message whith ketrace topic
-        // if let Some(search_str) = &info.publish_topic {
-        //     if FILTER_TOPIC_ARRAY.contains(&search_str.as_str()) {
-        //         return Ok(L7ParseResult::None);
-        //     }
-        // }
-
         // handle kafka status code
         {
             let mut log_cache = param.l7_perf_cache.borrow_mut();
             if let Some(previous) = log_cache.rrt_cache.get(&info.cal_cache_key(param)) {
                 match (previous.msg_type, info.msg_type) {
                     (LogMessageType::Request, LogMessageType::Response)
-                        if param.time < previous.time + param.rrt_timeout as u64 =>
-                    {
-                        if let Some(req) = previous.kafka_info.as_ref() {
-                            self.set_status_code(
-                                req.api_key,
-                                req.api_version,
-                                read_i16_be(&payload[12..]),
-                                &mut info,
-                            )
+                    if param.time < previous.time + param.rrt_timeout as u64 =>
+                        {
+                            if let Some(req) = previous.kafka_info.as_ref() {
+                                self.set_status_code(
+                                    req.api_key,
+                                    req.api_version,
+                                    read_i16_be(&payload[12..]),
+                                    &mut info,
+                                )
+                            }
                         }
-                    }
                     (LogMessageType::Response, LogMessageType::Request)
-                        if previous.time < param.time + param.rrt_timeout as u64 =>
-                    {
-                        if let Some(resp) = previous.kafka_info.as_ref() {
-                            self.set_status_code(
-                                info.api_key,
-                                info.api_version,
-                                resp.code,
-                                &mut info,
-                            )
+                    if previous.time < param.time + param.rrt_timeout as u64 =>
+                        {
+                            if let Some(resp) = previous.kafka_info.as_ref() {
+                                self.set_status_code(
+                                    info.api_key,
+                                    info.api_version,
+                                    resp.code,
+                                    &mut info,
+                                )
+                            }
                         }
-                    }
                     _ => {}
                 }
             }
@@ -298,10 +303,10 @@ impl L7ProtocolParserInterface for KafkaLog {
                 code: read_i16_be(&payload[12..]),
             }),
         )
-        .map(|rrt| {
-            info.rrt = rrt;
-            self.perf_stats.as_mut().map(|p| p.update_rrt(rrt));
-        });
+            .map(|rrt| {
+                info.rrt = rrt;
+                self.perf_stats.as_mut().map(|p| p.update_rrt(rrt));
+            });
         if param.parse_log {
             Ok(L7ParseResult::Single(L7ProtocolInfo::KafkaInfo(info)))
         } else {
@@ -329,7 +334,7 @@ impl KafkaLog {
     // ================================================================================
     // The protocol identification is strictly checked to avoid misidentification.
     // The log analysis is not strictly checked because there may be length truncation
-    fn request(&mut self, payload: &[u8], strict: bool, info: &mut KafkaInfo, param: &ParseParam) -> Result<()> {
+    fn request(&mut self, payload: &[u8], strict: bool, info: &mut KafkaInfo) -> Result<()> {
         let req_len = read_u32_be(payload);
         info.req_msg_size = Some(req_len);
         let client_id_len = read_u16_be(&payload[12..]) as usize;
@@ -346,32 +351,31 @@ impl KafkaLog {
         info.api_version = read_u16_be(&payload[6..]);
         info.correlation_id = read_u32_be(&payload[8..]);
         info.client_id = String::from_utf8_lossy(&payload[14..14 + client_id_len]).into_owned();
+        if !info.client_id.is_ascii() {
+            return Err(Error::KafkaLogParseFailed);
+        }
 
         let client_id_end = 14 + client_id_len;
         // parse_payload 解析 topic
         if !strict && payload.len() > KAFKA_REQ_HEADER_LEN + client_id_len {
-            self.parse_body(payload, info, client_id_end, param)?;
-        }
-
-        if !info.client_id.is_ascii() {
-            return Err(Error::KafkaLogParseFailed);
+            self.parse_request_body(payload, info, client_id_end)?;
         }
         Ok(())
     }
 
     // 协议解析，不同api_key 和 api_version 解析方式不同
     // https://kafka.apache.org/protocol.html#protocol_details
-    fn parse_body(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize, param: &ParseParam) -> Result<()> {
+    fn parse_request_body(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
         let req_type = info.get_command();
         match req_type {
             "Produce" => {
-                self.parse_produce_message(payload, info, start, param)?;
+                self.parse_produce_message(payload, info, start)?;
             }
             "Fetch" => {
-                self.parse_fetch_message(payload, info, start, param)?;
+                self.parse_fetch_message(payload, info, start)?;
             }
             "OffsetCommit" => {
-                self.parse_offset_commit_message(payload, info, start, param)?;
+                self.parse_offset_commit_message(payload, info, start)?;
             }
             _ => {}
         }
@@ -379,65 +383,79 @@ impl KafkaLog {
         Ok(())
     }
 
+    fn parse_response_body(&mut self, payload: &[u8], info: &mut KafkaInfo, index: usize) -> Result<()> {
+        // let throttle_time_ms = read_u32_be(&payload[index..]);
+        // println!("kafka payload throttle_time_ms {:?}", throttle_time_ms);
+        let start = index + 4 + 4;
+        if payload.len() > start {
+            let body = &payload[start..];
+            let topic_len = read_u16_be(&body[..]) as usize;
+            let topic_end_index = (2 + topic_len) as usize;
+            if topic_len > 0 && body.len() > topic_end_index {
+                // 前两个字节为长度
+                let topic_name_bytes: Vec<u8> = body[2..topic_end_index].to_vec();
+                if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
+                    if !topic_name.is_empty() && topic_name.is_ascii() {
+                        info.publish_topic = Some(topic_name);
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     // 解析 produce request
-    fn parse_produce_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize, param: &ParseParam) -> Result<()> {
+    fn parse_produce_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
         let api_version = info.api_version;
         let mut step = 10;
         match api_version {
             0..=2 => {
                 let index = start + step;
-                self.parse_topic_name(payload, index, info, param)?;
+                self.parse_topic_name(payload, index, info)?;
             }
             3..=9 => {
                 step = 12;
                 let index = start + step;
-                self.parse_topic_name(payload, index, info, param)?;
+                self.parse_topic_name(payload, index, info)?;
             }
-            _ => {
-                info!("Skip parsing topic metadata in kafka produce request message, current api_version: {:?}, payload: {:?}, param: {:?}",
-                    api_version, payload, param)
-            }
+            _ => {}
         }
 
         Ok(())
     }
 
     // 解析 fetch request
-    fn parse_fetch_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize, param: &ParseParam) -> Result<()> {
+    fn parse_fetch_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
         let api_version = info.api_version;
-        let mut step = 20;
         match api_version {
             0..=2 => {
+                let step = 16;
                 let index = start + step;
-                self.parse_topic_name(payload, index, info, param)?;
+                self.parse_topic_name(payload, index, info)?;
             }
             3 => {
-                step = 20;
+                let step = 20;
                 let index = start + step;
-                self.parse_topic_name(payload, index, info, param)?;
+                self.parse_topic_name(payload, index, info)?;
             }
             4..=6 => {
-                step = 21;
+                let step = 21;
                 let index = start + step;
-                self.parse_topic_name(payload, index, info, param)?;
+                self.parse_topic_name(payload, index, info)?;
             }
             7..=15 => {
-                step = 29;
+                let step = 29;
                 let index = start + step;
-                self.parse_topic_name(payload, index, info, param)?;
+                self.parse_topic_name(payload, index, info)?;
             }
-            _ => {
-                info!("Skip parsing topic metadata in kafka fetch request message， current api_version: {:?}, payload: {:?}, param: {:?}",
-                    api_version, payload, param)
-            }
+            _ => {}
         }
         Ok(())
     }
 
     // 解析 OffsetCommit request
-    fn parse_offset_commit_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize, param: &ParseParam) -> Result<()> {
+    fn parse_offset_commit_message(&mut self, payload: &[u8], info: &mut KafkaInfo, start: usize) -> Result<()> {
         let api_version = info.api_version;
-        // let req_type = info.get_command();
         match api_version {
             1..=7 => {
                 if payload.len() > start {
@@ -481,7 +499,6 @@ impl KafkaLog {
                     let topic_name = String::from_utf8_lossy(&payload[s_index..e_index]).into_owned();
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
-                        // info!("Kafka Topic name parsed success. current topic_name: {:?}, current api_key: {:?}, current api_version: {:?}, current payload: {:?}", info.publish_topic, req_type, info.api_version, payload);
                     }
                 }
             }
@@ -520,32 +537,23 @@ impl KafkaLog {
                     }
                 }
             }
-            _ => {
-                info!("Skip parsing topic metadata in kafka OffsetCommit request message， current api_version: {:?}, current payload: {:?}, param: {:?}",
-                    api_version, payload, param);
-            }
+            _ => {}
         }
         Ok(())
     }
 
-    fn parse_topic_name(&mut self, payload: &[u8], index: usize, info: &mut KafkaInfo, param: &ParseParam) -> Result<()> {
+    fn parse_topic_name(&mut self, payload: &[u8], index: usize, info: &mut KafkaInfo) -> Result<()> {
         if payload.len() > index {
             let body = &payload[index..];
             let topic_len = read_u16_be(&body[..]) as usize;
             let topic_end_index = (2 + topic_len) as usize;
-            let req_type = info.get_command();
             if topic_len > 0 && body.len() > topic_end_index {
                 // 前两个字节为长度
                 let topic_name_bytes: Vec<u8> = body[2..topic_end_index].to_vec();
                 if let Ok(topic_name) = String::from_utf8(topic_name_bytes) {
                     if !topic_name.is_empty() && topic_name.is_ascii() {
                         info.publish_topic = Some(topic_name);
-                        info!("Kafka Topic name parsed success. topic_name: {:?}, api_key: {:?}, api_version: {:?}, payload: {:?}, param: {:?}", info.publish_topic, req_type, info.api_version, payload, param);
-                    } else {
-                        info!("Kafka Topic name is not a valid ASCII string or is empty. payload: {:?}", payload);
                     }
-                } else {
-                    info!("Failed to decode kafka topic name. payload: {:?}", payload);
                 }
             }
         }
@@ -553,9 +561,19 @@ impl KafkaLog {
     }
 
     fn response(&mut self, payload: &[u8], info: &mut KafkaInfo) -> Result<()> {
-        info.resp_msg_size = Some(read_u32_be(payload));
+        let resp_len = read_u32_be(payload);
+        info.resp_msg_size = Some(resp_len);
         info.correlation_id = read_u32_be(&payload[4..]);
         info.msg_type = LogMessageType::Response;
+        if payload.len() < KAFKA_RESP_HEADER_LEN {
+            return Err(Error::KafkaLogParseFailed);
+        }
+        if resp_len as usize != payload.len() - Self::MSG_LEN_SIZE {
+            return Err(Error::KafkaLogParseFailed);
+        }
+
+        let correlation_id_end = 8;
+        self.parse_response_body(payload, info, correlation_id_end)?;
         Ok(())
     }
 
@@ -564,8 +582,7 @@ impl KafkaLog {
         payload: &[u8],
         proto: IpProtocol,
         direction: PacketDirection,
-        info: &mut KafkaInfo,
-        param: &ParseParam
+        info: &mut KafkaInfo
     ) -> Result<()> {
         if proto != IpProtocol::TCP {
             return Err(Error::InvalidIpProtocol);
@@ -575,7 +592,7 @@ impl KafkaLog {
         }
         match direction {
             PacketDirection::ClientToServer => {
-                self.request(payload, false, info, param)?;
+                self.request(payload, false, info)?;
                 self.perf_stats.as_mut().map(|p| p.inc_req());
             }
             PacketDirection::ServerToClient => {
