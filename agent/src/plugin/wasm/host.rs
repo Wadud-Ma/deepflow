@@ -20,7 +20,7 @@ use std::{
 };
 
 use anyhow::Result;
-use log::error;
+use log::{error, info};
 use wasmtime::{
     AsContextMut, Engine, Instance, Linker, Module, Store, StoreLimits, StoreLimitsBuilder,
     TypedFunc, WasmParams, WasmResults,
@@ -256,6 +256,7 @@ impl WasmVm {
         param: &ParseParam,
         info: &HttpInfo,
     ) -> Option<CustomInfo> {
+        info!("======= wasm hook on_http_req {:#?}", info);
         if self.instance.len() == 0 {
             return None;
         }
