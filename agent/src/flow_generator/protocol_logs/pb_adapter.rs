@@ -169,6 +169,6 @@ impl L7ProtocolSendLog {
             }
             log.ext_info = Some(ext_info);
         }
-        info!("======= L7ProtocolSendLog resource {:?}", self.req.resource.into())
+        info!("======= L7ProtocolSendLog resource {:?}", self.req.resource)
     }
 }
