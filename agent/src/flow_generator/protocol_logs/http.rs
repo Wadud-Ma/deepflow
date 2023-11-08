@@ -160,6 +160,8 @@ impl HttpInfo {
         if !custom.attributes.is_empty() {
             self.attributes.extend(custom.attributes);
         }
+
+        info!("======= http_v1 merge info {:?}", self);
     }
 }
 
@@ -769,7 +771,6 @@ impl HttpLog {
         } else {
             info.req_content_length = content_length;
         }
-        info!("======= http_v1 info {:?}, param: {:?}", info, param);
         Ok(())
     }
 

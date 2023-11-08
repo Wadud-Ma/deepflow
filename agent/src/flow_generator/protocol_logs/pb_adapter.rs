@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+use log::info;
 use super::L7ResponseStatus;
 
 use public::proto::flow_log;
@@ -168,5 +169,6 @@ impl L7ProtocolSendLog {
             }
             log.ext_info = Some(ext_info);
         }
+        info!("======= L7ProtocolSendLog resource {:?}", self.req.resource.into())
     }
 }
