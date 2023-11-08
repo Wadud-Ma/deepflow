@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-use log::info;
 use super::L7ResponseStatus;
 
 use public::proto::flow_log;
