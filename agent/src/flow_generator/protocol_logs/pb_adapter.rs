@@ -98,7 +98,6 @@ impl L7ProtocolSendLog {
         log.req_len = req_len;
         log.resp_len = resp_len;
         log.row_effect = self.row_effect;
-        info!("======= L7ProtocolSendLog resource {:?}", self.req.resource.clone());
         log.req = Some(flow_log::L7Request {
             req_type: self.req.req_type.into(),
             domain: self.req.domain.into(),
