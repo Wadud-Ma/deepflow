@@ -23,7 +23,6 @@ use std::sync::{
     Condvar, Mutex,
 };
 use std::time::{Duration, Instant};
-use log::info;
 
 use super::Error;
 use crate::counter as stats;
@@ -151,7 +150,6 @@ impl<T> OverwriteQueue<T> {
             .input
             .fetch_add(count as u64, Ordering::Relaxed);
         self.notify.notify_one();
-        info!("======= raw_send buffer {:?}", self.buffer.clone());
         Ok(())
     }
 

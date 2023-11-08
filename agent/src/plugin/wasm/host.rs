@@ -20,7 +20,7 @@ use std::{
 };
 
 use anyhow::Result;
-use log::{error, info};
+use log::{error};
 use wasmtime::{
     AsContextMut, Engine, Instance, Linker, Module, Store, StoreLimits, StoreLimitsBuilder,
     TypedFunc, WasmParams, WasmResults,
@@ -256,7 +256,6 @@ impl WasmVm {
         param: &ParseParam,
         info: &HttpInfo,
     ) -> Option<CustomInfo> {
-        info!("======= wasm hook on_http_req {:?}, param: {:?}", info, param);
         if self.instance.len() == 0 {
             return None;
         }
@@ -331,7 +330,6 @@ impl WasmVm {
 
         // clean the ctx
         drop(self.store.data_mut().parse_ctx.take());
-        info!("======= wasm hook on_http_req result {:?}", ret);
         ret
     }
 

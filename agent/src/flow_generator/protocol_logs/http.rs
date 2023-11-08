@@ -44,7 +44,6 @@ use crate::{
     utils::bytes::{read_u32_be, read_u32_le},
 };
 use cloud_platform::tingyun;
-use log::info;
 use public::utils::net::h2pack;
 
 #[derive(Serialize, Debug, Default, Clone)]
@@ -160,8 +159,6 @@ impl HttpInfo {
         if !custom.attributes.is_empty() {
             self.attributes.extend(custom.attributes);
         }
-
-        info!("======= http_v1 merge info {:?}", self);
     }
 }
 
