@@ -484,7 +484,7 @@ impl L7ProtocolParserInterface for HttpLog {
         if self.perf_stats.is_none() && param.parse_perf {
             self.perf_stats = Some(L7PerfStats::default())
         };
-        info!("======= http_v1 parse_payload {:#?}， param:  {:#?}", payload, param);
+
         match self.proto {
             L7Protocol::Http1 => {
                 self.parse_http_v1(payload, param, &mut info)?;
@@ -625,7 +625,6 @@ impl HttpLog {
         param: &ParseParam,
         info: &mut HttpInfo,
     ) -> Result<()> {
-        info!("======= http_v1 check parse_http2_go_uprobe {:#?}, config: {:#?}", param, config);
         if payload.len() < HTTPV2_CUSTOM_DATA_MIN_LENGTH {
             return Err(Error::HttpHeaderParseFailed);
         }
@@ -770,7 +769,7 @@ impl HttpLog {
         } else {
             info.req_content_length = content_length;
         }
-        info!("======= http_v1 info {:#?}", info);
+        info!("======= http_v1 info {:?}, param: {:?}", info, param);
         Ok(())
     }
 
@@ -787,7 +786,6 @@ impl HttpLog {
         param: &ParseParam,
         info: &mut HttpInfo,
     ) -> Result<()> {
-        info!("======= http_v1 check parse_http_v2 {:#?}", param);
         let (direction, config) = (
             param.direction,
             &param.parse_config.as_ref().unwrap().l7_log_dynamic,
@@ -1195,7 +1193,6 @@ pub fn is_http_req_line(line: &str) -> bool {
         return false;
     }
 
-    info!("======= http_v1 check is_http_req_line {:#?}", line);
     // consider use prefix tree in future
     for i in HTTP_METHODS.iter() {
         if line.starts_with(i) {
