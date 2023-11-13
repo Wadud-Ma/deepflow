@@ -383,7 +383,7 @@ impl From<HttpInfo> for L7ProtocolSendLog {
             )
         } else {
             (
-                f.method,
+                f.method.clone(),
                 f.path.clone(),
                 f.host,
                 f.custom_endpoint.clone().unwrap_or_default(),
@@ -391,7 +391,7 @@ impl From<HttpInfo> for L7ProtocolSendLog {
         };
 
         if (!resource.is_empty() && resource.contains("/sinan-socket-channel/info")) || (!endpoint.is_empty() && endpoint.contains("/sinan-socket-channel/info")) {
-            info!("L7ProtocolSendLog: resource: {:?}, domain: {:?}, endpoint: {:?}, is_grpc: {:?}, info: {:?}", resource, domain, endpoint, is_grpc, f);
+            info!("L7ProtocolSendLog: resource: {:?}, domain: {:?}, endpoint: {:?}, is_grpc: {:?}, info: {:?}", resource, domain, endpoint, is_grpc, &f);
         }
 
         L7ProtocolSendLog {
