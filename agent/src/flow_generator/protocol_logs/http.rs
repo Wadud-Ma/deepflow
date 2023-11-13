@@ -114,6 +114,9 @@ pub struct HttpInfo {
 
 impl HttpInfo {
     pub fn merge_custom_to_http1(&mut self, custom: CustomInfo) {
+        if (!self.path.is_empty() && self.path == "/sinan-socket-channel/info") || (!custom.req.endpoint.is_empty() && custom.req.endpoint == "/sinan-socket-channel/info") {
+            info!("Http parser: info: {:?}, custom: {:?}", &self, &custom)
+        }
         // req rewrite
         if !custom.req.domain.is_empty() {
             self.host = custom.req.domain;
@@ -159,9 +162,6 @@ impl HttpInfo {
         // extend attribute
         if !custom.attributes.is_empty() {
             self.attributes.extend(custom.attributes);
-        }
-        if (!self.path.is_empty() && self.path == "/sinan-socket-channel/info") || (!custom.req.endpoint.is_empty() && custom.req.endpoint == "/sinan-socket-channel/info") {
-            info!("Http parser: info: {:?}, custom: {:?}", &self, &custom)
         }
     }
 }
