@@ -160,8 +160,8 @@ impl HttpInfo {
         if !custom.attributes.is_empty() {
             self.attributes.extend(custom.attributes);
         }
-        if ((!self.path.is_empty() && self.path == "/sinan-socket-channel/info") || (!custom.req.endpoint.is_empty() && custom.req.endpoint == "/sinan-socket-channel/info")) {
-            info!("Http parser: info: {:?}, custom: {:?}", self, custom)
+        if (!self.path.is_empty() && self.path == "/sinan-socket-channel/info") || (!custom.req.endpoint.is_empty() && custom.req.endpoint == "/sinan-socket-channel/info") {
+            info!("Http parser: info: {:?}, custom: {:?}", &self, &custom)
         }
     }
 }
