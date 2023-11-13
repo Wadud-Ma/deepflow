@@ -131,7 +131,7 @@ impl HttpInfo {
         }
 
         if !custom.req.endpoint.is_empty() {
-            self.custom_endpoint = Some(custom.req.endpoint)
+            self.custom_endpoint = Some(custom.req.endpoint.clone())
         }
 
         //req write
@@ -386,7 +386,7 @@ impl From<HttpInfo> for L7ProtocolSendLog {
                 f.method,
                 f.path.clone(),
                 f.host,
-                f.custom_endpoint.unwrap_or_default(),
+                f.custom_endpoint.clone().unwrap_or_default(),
             )
         };
 
