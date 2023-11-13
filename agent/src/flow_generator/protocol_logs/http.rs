@@ -372,6 +372,10 @@ impl From<HttpInfo> for L7ProtocolSendLog {
             None
         };
 
+        if (!f.path.is_empty() && f.path.contains("/sinan-socket-channel/info")) || (!f.custom_endpoint.unwrap_or_default().is_empty() && f.custom_endpoint.unwrap_or_default().contains("/sinan-socket-channel/info")) {
+            info!("L7ProtocolSendLog: is_grpc: {:?}, info: {:?}", is_grpc, &f);
+        }
+
         // grpc protocol special treatment
         let (req_type, resource, domain, endpoint) = if is_grpc {
             // server endpoint = req_type
@@ -383,16 +387,12 @@ impl From<HttpInfo> for L7ProtocolSendLog {
             )
         } else {
             (
-                f.method.clone(),
+                f.method,
                 f.path.clone(),
                 f.host,
-                f.custom_endpoint.clone().unwrap_or_default(),
+                f.custom_endpoint.unwrap_or_default(),
             )
         };
-
-        if (!resource.is_empty() && resource.contains("/sinan-socket-channel/info")) || (!endpoint.is_empty() && endpoint.contains("/sinan-socket-channel/info")) {
-            info!("L7ProtocolSendLog: resource: {:?}, domain: {:?}, endpoint: {:?}, is_grpc: {:?}, info: {:?}", resource, domain, endpoint, is_grpc, &f);
-        }
 
         L7ProtocolSendLog {
             req_len: f.req_content_length,
