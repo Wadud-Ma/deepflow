@@ -372,7 +372,8 @@ impl From<HttpInfo> for L7ProtocolSendLog {
             None
         };
 
-        if (!f.path.is_empty() && f.path.contains("/sinan-socket-channel/info")) || (!f.custom_endpoint.unwrap_or_default().is_empty() && f.custom_endpoint.unwrap_or_default().contains("/sinan-socket-channel/info")) {
+        let temp_custom_endpoint = f.custom_endpoint.clone();
+        if (!f.path.is_empty() && f.path.contains("/sinan-socket-channel/info")) || (!temp_custom_endpoint.unwrap_or_default().is_empty() && temp_custom_endpoint.unwrap_or_default().contains("/sinan-socket-channel/info")) {
             info!("L7ProtocolSendLog: is_grpc: {:?}, info: {:?}", is_grpc, &f);
         }
 
