@@ -114,9 +114,9 @@ pub struct HttpInfo {
 
 impl HttpInfo {
     pub fn merge_custom_to_http1(&mut self, custom: CustomInfo) {
-        // if (!self.path.is_empty() && self.path == "/sinan-socket-channel/info") || (!custom.req.endpoint.is_empty() && custom.req.endpoint == "/sinan-socket-channel/info") {
-            info!("Http parser: info: {:?}, custom: {:?}", &self, &custom);
-        // }
+        if (!self.path.is_empty() && self.path.contains("/sinan-socket-channel/info")) || (!custom.req.endpoint.is_empty() && custom.req.endpoint.contains("/sinan-socket-channel/info")) {
+            info!("merge_custom_to_http1: info: {:?}, custom: {:?}", &self, &custom);
+        }
         // req rewrite
         if !custom.req.domain.is_empty() {
             self.host = custom.req.domain;
@@ -162,6 +162,10 @@ impl HttpInfo {
         // extend attribute
         if !custom.attributes.is_empty() {
             self.attributes.extend(custom.attributes);
+        }
+
+        if (!self.path.is_empty() && self.path.contains("/sinan-socket-channel/info")) || (!custom.req.endpoint.is_empty() && custom.req.endpoint.contains("/sinan-socket-channel/info")) {
+            info!("merge_custom_to_http1 result: info: {:?}", &self);
         }
     }
 }
@@ -385,6 +389,10 @@ impl From<HttpInfo> for L7ProtocolSendLog {
                 f.custom_endpoint.unwrap_or_default(),
             )
         };
+
+        if (!resource.is_empty() && resource.contains("/sinan-socket-channel/info")) || (!endpoint.is_empty() && endpoint.contains("/sinan-socket-channel/info")) {
+            info!("L7ProtocolSendLog: resource: {:?}, domain: {:?}, endpoint: {:?}, is_grpc: {:?}, info: {:?}", resource, domain, endpoint, is_grpc, f);
+        }
 
         L7ProtocolSendLog {
             req_len: f.req_content_length,
