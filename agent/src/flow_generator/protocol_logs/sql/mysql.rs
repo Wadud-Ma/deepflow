@@ -432,7 +432,6 @@ impl MysqlLog {
             _ => (),
         }
         self.perf_stats.as_mut().map(|p| p.inc_resp());
-        info!("---- response payload: {:?}, info: {:?}", payload, info);
         Ok(())
     }
 
@@ -456,7 +455,11 @@ impl MysqlLog {
         match protocol_version_or_query_type {
             COM_QUERY | COM_STMT_PREPARE => {
                 let context = mysql_string(&payload[offset + 1..]);
-                return context.is_ascii() && is_mysql(&context);
+                let is_mysql = context.is_ascii() && is_mysql(&context);
+                if is_mysql == true {
+                    info!("---- MysqlHeader payload: {:?}, offset: {:?}", payload, offset);
+                }
+                return is_mysql;
             }
             _ => {}
         }
@@ -478,7 +481,6 @@ impl MysqlLog {
 
         let mut header = MysqlHeader::default();
         let offset = header.decode(payload);
-        info!("---- MysqlHeader payload: {:?}, offset: {:?}", payload, offset);
         if offset < 0 {
             return Err(Error::MysqlLogParseFailed);
         }
