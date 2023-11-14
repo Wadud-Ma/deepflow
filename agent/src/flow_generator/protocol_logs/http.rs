@@ -44,7 +44,6 @@ use crate::{
     utils::bytes::{read_u32_be, read_u32_le},
 };
 use cloud_platform::tingyun;
-use log::info;
 use public::utils::net::h2pack;
 
 #[derive(Serialize, Debug, Default, Clone)]
@@ -114,9 +113,6 @@ pub struct HttpInfo {
 
 impl HttpInfo {
     pub fn merge_custom_to_http1(&mut self, custom: CustomInfo) {
-        if (!self.path.is_empty() && self.path.contains("/sinan-socket-channel/info")) || (!custom.req.endpoint.is_empty() && custom.req.endpoint.contains("/sinan-socket-channel/info")) {
-            info!("merge_custom_to_http1: info: {:?}, custom: {:?}", &self, &custom);
-        }
         // req rewrite
         if !custom.req.domain.is_empty() {
             self.host = custom.req.domain;
@@ -131,7 +127,7 @@ impl HttpInfo {
         }
 
         if !custom.req.endpoint.is_empty() {
-            self.custom_endpoint = Some(custom.req.endpoint.clone())
+            self.custom_endpoint = Some(custom.req.endpoint)
         }
 
         //req write
@@ -162,10 +158,6 @@ impl HttpInfo {
         // extend attribute
         if !custom.attributes.is_empty() {
             self.attributes.extend(custom.attributes);
-        }
-
-        if (!self.path.is_empty() && self.path.contains("/sinan-socket-channel/info")) || (!custom.req.endpoint.is_empty() && custom.req.endpoint.contains("/sinan-socket-channel/info")) {
-            info!("merge_custom_to_http1 result: info: {:?}", &self);
         }
     }
 }
@@ -390,7 +382,7 @@ impl From<HttpInfo> for L7ProtocolSendLog {
             )
         };
 
-        let log = L7ProtocolSendLog {
+        return L7ProtocolSendLog {
             req_len: f.req_content_length,
             resp_len: f.resp_content_length,
             version: Some(f.version),
@@ -430,12 +422,6 @@ impl From<HttpInfo> for L7ProtocolSendLog {
             }),
             ..Default::default()
         };
-
-        if (!log.req.resource.is_empty() && log.req.resource.contains("/sinan-socket-channel/info")) || (!log.req.endpoint.is_empty() && log.req.endpoint.contains("/sinan-socket-channel/info")) {
-            info!("L7ProtocolSendLog: is_grpc: {:?}, info: {:?}", is_grpc, &log);
-        }
-
-        return log;
     }
 }
 

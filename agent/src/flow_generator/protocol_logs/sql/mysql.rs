@@ -16,6 +16,7 @@
 
 mod comment_parser;
 
+use log::info;
 use serde::Serialize;
 
 use super::super::{consts::*, value_is_default, AppProtoHead, L7ResponseStatus, LogMessageType};
@@ -396,6 +397,7 @@ impl MysqlLog {
     }
 
     fn response(&mut self, payload: &[u8], info: &mut MysqlInfo) -> Result<()> {
+        info!("---- payload: {:?}, info: {:?}", payload, info);
         let mut remain = payload.len();
         if remain < RESPONSE_CODE_LEN {
             return Err(Error::MysqlLogParseFailed);
