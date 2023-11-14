@@ -528,7 +528,7 @@ impl MysqlHeader {
             return 0;
         }
         let offset = offset as isize;
-        offset + self.decode(&payload[offset as usize..]);
+        offset + self.decode(&payload[offset as usize..])
     }
 
     pub fn check(
