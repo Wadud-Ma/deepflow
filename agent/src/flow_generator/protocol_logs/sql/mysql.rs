@@ -16,7 +16,6 @@
 
 mod comment_parser;
 
-use log::info;
 use serde::Serialize;
 
 use super::super::{consts::*, value_is_default, AppProtoHead, L7ResponseStatus, LogMessageType};
@@ -455,11 +454,7 @@ impl MysqlLog {
         match protocol_version_or_query_type {
             COM_QUERY | COM_STMT_PREPARE => {
                 let context = mysql_string(&payload[offset + 1..]);
-                let is_mysql = context.is_ascii() && is_mysql(&context);
-                if is_mysql == true {
-                    info!("---- MysqlHeader payload: {:?}, offset: {:?}", payload, offset);
-                }
-                return is_mysql;
+                return context.is_ascii() && is_mysql(&context);
             }
             _ => {}
         }
