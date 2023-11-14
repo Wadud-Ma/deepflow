@@ -397,7 +397,6 @@ impl MysqlLog {
     }
 
     fn response(&mut self, payload: &[u8], info: &mut MysqlInfo) -> Result<()> {
-        info!("---- payload: {:?}, info: {:?}", payload, info);
         let mut remain = payload.len();
         if remain < RESPONSE_CODE_LEN {
             return Err(Error::MysqlLogParseFailed);
@@ -433,6 +432,7 @@ impl MysqlLog {
             _ => (),
         }
         self.perf_stats.as_mut().map(|p| p.inc_resp());
+        info!("---- response payload: {:?}, info: {:?}", payload, info);
         Ok(())
     }
 
@@ -527,7 +527,8 @@ impl MysqlHeader {
             return 0;
         }
         let offset = offset as isize;
-        offset + self.decode(&payload[offset as usize..])
+        offset + self.decode(&payload[offset as usize..]);
+        info!("---- MysqlHeader payload: {:?}, info: {:?}", payload, self);
     }
 
     pub fn check(
