@@ -478,6 +478,7 @@ impl MysqlLog {
 
         let mut header = MysqlHeader::default();
         let offset = header.decode(payload);
+        info!("---- MysqlHeader payload: {:?}, offset: {:?}", payload, offset);
         if offset < 0 {
             return Err(Error::MysqlLogParseFailed);
         }
@@ -528,7 +529,6 @@ impl MysqlHeader {
         }
         let offset = offset as isize;
         offset + self.decode(&payload[offset as usize..]);
-        info!("---- MysqlHeader payload: {:?}, info: {:?}", payload, self);
     }
 
     pub fn check(
