@@ -258,7 +258,7 @@ impl L7ProtocolParserInterface for DubboLog {
             self.perf_stats.as_mut().map(|p| p.update_rrt(rrt));
         });
         if param.parse_log {
-            info!("---- dubbo payload: {:?}, info: {:?} ", payload, info);
+            info!("----- dubbo payload: {:?}, info: {:?} ", payload, info);
             Ok(L7ParseResult::Single(L7ProtocolInfo::DubboInfo(info)))
         } else {
             Ok(L7ParseResult::None)
