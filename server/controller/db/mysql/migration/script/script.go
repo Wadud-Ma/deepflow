@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Yunshan Networks
+ * Copyright (c) 2023 Yunshan Networks
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef ATTACH_H
-#define ATTACH_H
+package script
 
-#define DF_JAVA_ATTACH_CMD "/usr/bin/deepflow-jattach"
-void gen_java_symbols_file(int pid);
-#endif /* ATTACH_H */
+import "github.com/op/go-logging"
+
+var log = logging.MustGetLogger("db.mysql.migration.script")

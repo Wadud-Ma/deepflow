@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Yunshan Networks
+ * Copyright (c) 2023 Yunshan Networks
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,24 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <dlfcn.h>
+#[derive(Default, PartialEq, Debug)]
+pub struct OracleParser {
+    pub sql: String,
+    pub data_id: u8,
+    pub call_id: u8,
 
-#include "../common.h"
-#include "../log.h"
-#include "java/df_jattach.h"
-#include "attach.h"
+    // response
+    pub ret_code: u16,
+    pub affected_rows: Option<u32>,
+    pub error_message: String,
+}
 
-void gen_java_symbols_file(int pid)
-{
-	int target_ns_pid = get_nspid(pid);
-	if (target_ns_pid < 0) {
-		return;
-	}
+impl OracleParser {
+    pub fn check_payload(&mut self, _: &[u8]) -> bool {
+        false
+    }
 
-	char args[32];
-	snprintf(args, sizeof(args), "%d", pid);
-	exec_command(DF_JAVA_ATTACH_CMD, args);
-
-	clear_target_ns_so(pid, target_ns_pid);
+    pub fn parse_payload(&mut self, _: &[u8], _: bool) -> bool {
+        unreachable!();
+    }
 }
