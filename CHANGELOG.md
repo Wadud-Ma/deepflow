@@ -8,6 +8,7 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: Fix missing pod interface in macvlan mode [#7315](https://github.com/deepflowio/deepflow/pull/7315) by [rvql](https://github.com/rvql)
 * fix: agent - remove duplicate vhost dispatcher [#7267](https://github.com/deepflowio/deepflow/pull/7267) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: Show metrics use query cache can be configured [#7263](https://github.com/deepflowio/deepflow/pull/7263) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: server recorder prints unnecessary error logs [#7262](https://github.com/deepflowio/deepflow/pull/7262) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
@@ -40,6 +41,10 @@
 * Fix prometheus data cannot be labeled with universal tags，if slow-decoder is used. [#7100](https://github.com/deepflowio/deepflow/pull/7100)
 
 #### NEW FEATURE
+* feat: agent - eBPF Whitelist implementation reassembly [#7316](https://github.com/deepflowio/deepflow/pull/7316) by [yinjiping](https://github.com/yinjiping)
+* feat: Change remote exec param to use regex [#7314](https://github.com/deepflowio/deepflow/pull/7314) by [rvql](https://github.com/rvql)
+* feat: mark the resource information of loopback traffic by Agent info [#7305](https://github.com/deepflowio/deepflow/pull/7305) by [lzf575](https://github.com/lzf575)
+* feat: Add RemoteExec param spec and change cmd id type to string [#7287](https://github.com/deepflowio/deepflow/pull/7287) by [rvql](https://github.com/rvql)
 * feat: Support kubernetes api field_selector [#7248](https://github.com/deepflowio/deepflow/pull/7248) by [rvql](https://github.com/rvql)
 * feat: add debug ctl to rebalance agent by traffic [#7184](https://github.com/deepflowio/deepflow/pull/7184) by [roryye](https://github.com/roryye)
 * feat: agent - eBPF Add JAVA symbol file generation log [#7258](https://github.com/deepflowio/deepflow/pull/7258) by [yinjiping](https://github.com/yinjiping)
