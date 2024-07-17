@@ -8,6 +8,10 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: recorder reports wrong sub_domain infomation in domain logs [#7441](https://github.com/deepflowio/deepflow/pull/7441) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
+* fix: unable to delete sub_domain related resource [#7439](https://github.com/deepflowio/deepflow/pull/7439) by [SongZhen0704](https://github.com/SongZhen0704)
+* fix: Fix the problem of duplicate fields in select [#7434](https://github.com/deepflowio/deepflow/pull/7434) by [xiaochaoren1](https://github.com/xiaochaoren1)
+* fix: Fix concurrent request command for the same agent [#7410](https://github.com/deepflowio/deepflow/pull/7410) by [roryye](https://github.com/roryye)
 * fix: agent - remove duplicate vhost dispatcher [#7267](https://github.com/deepflowio/deepflow/pull/7267) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: Show metrics use query cache can be configured [#7263](https://github.com/deepflowio/deepflow/pull/7263) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: server recorder prints unnecessary error logs [#7262](https://github.com/deepflowio/deepflow/pull/7262) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
@@ -40,6 +44,8 @@
 * Fix prometheus data cannot be labeled with universal tags，if slow-decoder is used. [#7100](https://github.com/deepflowio/deepflow/pull/7100)
 
 #### NEW FEATURE
+* feat: add agent command type probe [#7433](https://github.com/deepflowio/deepflow/pull/7433) by [roryye](https://github.com/roryye)
+* feat: Alarm event field optimization [#7409](https://github.com/deepflowio/deepflow/pull/7409) by [jin-xiaofeng](https://github.com/jin-xiaofeng)
 * feat: Support kubernetes api field_selector [#7248](https://github.com/deepflowio/deepflow/pull/7248) by [rvql](https://github.com/rvql)
 * feat: add debug ctl to rebalance agent by traffic [#7184](https://github.com/deepflowio/deepflow/pull/7184) by [roryye](https://github.com/roryye)
 * feat: agent - eBPF Add JAVA symbol file generation log [#7258](https://github.com/deepflowio/deepflow/pull/7258) by [yinjiping](https://github.com/yinjiping)
@@ -76,3 +82,7 @@
 
 #### Chore
 * chore: update cli dependencies [#7249](https://github.com/deepflowio/deepflow/pull/7249) by [lzf575](https://github.com/lzf575)
+
+
+#### OTHER
+* refacter: trace_tree add encoding respose statistics [#7430](https://github.com/deepflowio/deepflow/pull/7430) by [lzf575](https://github.com/lzf575)
