@@ -8,6 +8,7 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: agent - eBPF Continuous Java profiling support for linux 3.10 [#7486](https://github.com/deepflowio/deepflow/pull/7486) by [yinjiping](https://github.com/yinjiping)
 * fix: agent - remove duplicate vhost dispatcher [#7267](https://github.com/deepflowio/deepflow/pull/7267) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: Show metrics use query cache can be configured [#7263](https://github.com/deepflowio/deepflow/pull/7263) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: server recorder prints unnecessary error logs [#7262](https://github.com/deepflowio/deepflow/pull/7262) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
@@ -40,6 +41,8 @@
 * Fix prometheus data cannot be labeled with universal tags，if slow-decoder is used. [#7100](https://github.com/deepflowio/deepflow/pull/7100)
 
 #### NEW FEATURE
+* feat: support alarm event updated to alert event [#7457](https://github.com/deepflowio/deepflow/pull/7457) by [lzf575](https://github.com/lzf575)
+* feat: agent - support ingore vlan pcp [#7449](https://github.com/deepflowio/deepflow/pull/7449) by [yuanchaoa](https://github.com/yuanchaoa)
 * feat: Support kubernetes api field_selector [#7248](https://github.com/deepflowio/deepflow/pull/7248) by [rvql](https://github.com/rvql)
 * feat: add debug ctl to rebalance agent by traffic [#7184](https://github.com/deepflowio/deepflow/pull/7184) by [roryye](https://github.com/roryye)
 * feat: agent - eBPF Add JAVA symbol file generation log [#7258](https://github.com/deepflowio/deepflow/pull/7258) by [yinjiping](https://github.com/yinjiping)
