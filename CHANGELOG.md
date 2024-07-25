@@ -8,6 +8,9 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: data under all organizations should be cleared when disk is full [#7565](https://github.com/deepflowio/deepflow/pull/7565) by [lzf575](https://github.com/lzf575)
+* fix: do not pub to tagrecorder [#7563](https://github.com/deepflowio/deepflow/pull/7563) by [askyrie](https://github.com/askyrie)
+* fix: add agent cmd timeout to config [#7536](https://github.com/deepflowio/deepflow/pull/7536) by [roryye](https://github.com/roryye)
 * fix: agent - remove duplicate vhost dispatcher [#7267](https://github.com/deepflowio/deepflow/pull/7267) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: Show metrics use query cache can be configured [#7263](https://github.com/deepflowio/deepflow/pull/7263) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: server recorder prints unnecessary error logs [#7262](https://github.com/deepflowio/deepflow/pull/7262) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
@@ -40,6 +43,14 @@
 * Fix prometheus data cannot be labeled with universal tags，if slow-decoder is used. [#7100](https://github.com/deepflowio/deepflow/pull/7100)
 
 #### NEW FEATURE
+* feat: Table alert_event add tag [#7564](https://github.com/deepflowio/deepflow/pull/7564) by [Ericsssss](https://github.com/Ericsssss)
+* feat: alert event add fields [#7558](https://github.com/deepflowio/deepflow/pull/7558) by [lzf575](https://github.com/lzf575)
+* feat: change auto name  [#7557](https://github.com/deepflowio/deepflow/pull/7557) by [duandaa](https://github.com/duandaa)
+* feat: modify alert_event user_filter condition [#7556](https://github.com/deepflowio/deepflow/pull/7556) by [Ericsssss](https://github.com/Ericsssss)
+* feat: alert event add new filed [#7555](https://github.com/deepflowio/deepflow/pull/7555) by [jin-xiaofeng](https://github.com/jin-xiaofeng)
+* feat: alert event add _target_uid [#7549](https://github.com/deepflowio/deepflow/pull/7549) by [jin-xiaofeng](https://github.com/jin-xiaofeng)
+* feat: update data source collection event.alarm_event to event.alert_e… [#7539](https://github.com/deepflowio/deepflow/pull/7539) by [roryye](https://github.com/roryye)
+* feat: change service translation [#7538](https://github.com/deepflowio/deepflow/pull/7538) by [duandaa](https://github.com/duandaa)
 * feat: Support kubernetes api field_selector [#7248](https://github.com/deepflowio/deepflow/pull/7248) by [rvql](https://github.com/rvql)
 * feat: add debug ctl to rebalance agent by traffic [#7184](https://github.com/deepflowio/deepflow/pull/7184) by [roryye](https://github.com/roryye)
 * feat: agent - eBPF Add JAVA symbol file generation log [#7258](https://github.com/deepflowio/deepflow/pull/7258) by [yinjiping](https://github.com/yinjiping)
