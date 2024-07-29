@@ -8,6 +8,8 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: Modify alert_policy show tag values error #25978 [#7599](https://github.com/deepflowio/deepflow/pull/7599) by [Ericsssss](https://github.com/Ericsssss)
+* fix: modify resource delete error #25844 [#7552](https://github.com/deepflowio/deepflow/pull/7552) by [Ericsssss](https://github.com/Ericsssss)
 * fix: agent - remove duplicate vhost dispatcher [#7267](https://github.com/deepflowio/deepflow/pull/7267) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: Show metrics use query cache can be configured [#7263](https://github.com/deepflowio/deepflow/pull/7263) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: server recorder prints unnecessary error logs [#7262](https://github.com/deepflowio/deepflow/pull/7262) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
@@ -40,6 +42,16 @@
 * Fix prometheus data cannot be labeled with universal tags，if slow-decoder is used. [#7100](https://github.com/deepflowio/deepflow/pull/7100)
 
 #### NEW FEATURE
+* feat: Allow longer java symbol name [#7603](https://github.com/deepflowio/deepflow/pull/7603) by [rvql](https://github.com/rvql)
+* feat: Modify alert_policy node type [#7601](https://github.com/deepflowio/deepflow/pull/7601) by [Ericsssss](https://github.com/Ericsssss)
+* feat: agent - eBPF Add kernel dependency check [#7594](https://github.com/deepflowio/deepflow/pull/7594) by [yinjiping](https://github.com/yinjiping)
+* feat: delete invalid code for promethus target [#7574](https://github.com/deepflowio/deepflow/pull/7574) by [askyrie](https://github.com/askyrie)
+* feat: agent - support consistent timestamp in l7metrics [#7561](https://github.com/deepflowio/deepflow/pull/7561) by [yuanchaoa](https://github.com/yuanchaoa)
+* feat: Profile support grafana [#7559](https://github.com/deepflowio/deepflow/pull/7559) by [xiaochaoren1](https://github.com/xiaochaoren1)
+* feat: Use the new logging module [#7530](https://github.com/deepflowio/deepflow/pull/7530) by [jin-xiaofeng](https://github.com/jin-xiaofeng)
+* feat: update trace_tree struct [#7523](https://github.com/deepflowio/deepflow/pull/7523) by [lzf575](https://github.com/lzf575)
+* feat: update log format [#7519](https://github.com/deepflowio/deepflow/pull/7519) by [askyrie](https://github.com/askyrie)
+* feat: add cloud common for h3c [#7320](https://github.com/deepflowio/deepflow/pull/7320) by [askyrie](https://github.com/askyrie)
 * feat: Support kubernetes api field_selector [#7248](https://github.com/deepflowio/deepflow/pull/7248) by [rvql](https://github.com/rvql)
 * feat: add debug ctl to rebalance agent by traffic [#7184](https://github.com/deepflowio/deepflow/pull/7184) by [roryye](https://github.com/roryye)
 * feat: agent - eBPF Add JAVA symbol file generation log [#7258](https://github.com/deepflowio/deepflow/pull/7258) by [yinjiping](https://github.com/yinjiping)
