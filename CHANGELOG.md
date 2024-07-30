@@ -8,6 +8,11 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: fix agent traffic log [#7620](https://github.com/deepflowio/deepflow/pull/7620) by [roryye](https://github.com/roryye)
+* fix: Memory counter error [#7619](https://github.com/deepflowio/deepflow/pull/7619) by [rvql](https://github.com/rvql)
+* fix: Fix off-by-one error in java symbol rewrite [#7613](https://github.com/deepflowio/deepflow/pull/7613) by [rvql](https://github.com/rvql)
+* fix: Set 0 for e_stack_id [#7612](https://github.com/deepflowio/deepflow/pull/7612) by [rvql](https://github.com/rvql)
+* fix: Fix duplicate key for different java classes [#7611](https://github.com/deepflowio/deepflow/pull/7611) by [rvql](https://github.com/rvql)
 * fix: agent - remove duplicate vhost dispatcher [#7267](https://github.com/deepflowio/deepflow/pull/7267) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: Show metrics use query cache can be configured [#7263](https://github.com/deepflowio/deepflow/pull/7263) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: server recorder prints unnecessary error logs [#7262](https://github.com/deepflowio/deepflow/pull/7262) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
@@ -40,6 +45,13 @@
 * Fix prometheus data cannot be labeled with universal tags，if slow-decoder is used. [#7100](https://github.com/deepflowio/deepflow/pull/7100)
 
 #### NEW FEATURE
+* feat: support default team in domain create api [#7622](https://github.com/deepflowio/deepflow/pull/7622) by [SongZhen0704](https://github.com/SongZhen0704)
+* feat: Modify app_service and app_instance tag type and filter condition [#7621](https://github.com/deepflowio/deepflow/pull/7621) by [Ericsssss](https://github.com/Ericsssss)
+* feat: unifies legacy log organization info [#7618](https://github.com/deepflowio/deepflow/pull/7618) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
+* feat: log format add org [#7616](https://github.com/deepflowio/deepflow/pull/7616) by [askyrie](https://github.com/askyrie)
+* feat: fill profile app_instance [#7609](https://github.com/deepflowio/deepflow/pull/7609) by [taloric](https://github.com/taloric)
+* feat: agent - eBPF Add delay threshold check for push period [#7607](https://github.com/deepflowio/deepflow/pull/7607) by [yinjiping](https://github.com/yinjiping)
+* feat: Tagrecorder log add org info [#7579](https://github.com/deepflowio/deepflow/pull/7579) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * feat: Support kubernetes api field_selector [#7248](https://github.com/deepflowio/deepflow/pull/7248) by [rvql](https://github.com/rvql)
 * feat: add debug ctl to rebalance agent by traffic [#7184](https://github.com/deepflowio/deepflow/pull/7184) by [roryye](https://github.com/roryye)
 * feat: agent - eBPF Add JAVA symbol file generation log [#7258](https://github.com/deepflowio/deepflow/pull/7258) by [yinjiping](https://github.com/yinjiping)
@@ -63,6 +75,7 @@
 * feat: server directly reports metrics of load1_by_cpu_num that can be used for alert [#7088](https://github.com/deepflowio/deepflow/pull/7088) by [lzf575](https://github.com/lzf575)
 
 #### Refactoring
+* refactor: update monitor, server log with org info [#7597](https://github.com/deepflowio/deepflow/pull/7597) by [roryye](https://github.com/roryye)
 * refactor: server recorder polishes id allocator [#7168](https://github.com/deepflowio/deepflow/pull/7168) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
 * refactor: Change crate name [#7155](https://github.com/deepflowio/deepflow/pull/7155) by [rvql](https://github.com/rvql)
 
