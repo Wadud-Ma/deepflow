@@ -8,6 +8,10 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: traffic.go log [#7738](https://github.com/deepflowio/deepflow/pull/7738) by [roryye](https://github.com/roryye)
+* fix: server fixes the problem that TapInterfaceRegex cannot be set to empty [#7735](https://github.com/deepflowio/deepflow/pull/7735) by [TomatoMr](https://github.com/TomatoMr)
+* fix: Fix enum filter error [#7724](https://github.com/deepflowio/deepflow/pull/7724) by [xiaochaoren1](https://github.com/xiaochaoren1)
+* fix: Modify alert_event tag category #26069 [#7676](https://github.com/deepflowio/deepflow/pull/7676) by [Ericsssss](https://github.com/Ericsssss)
 * fix: agent - remove duplicate vhost dispatcher [#7267](https://github.com/deepflowio/deepflow/pull/7267) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: Show metrics use query cache can be configured [#7263](https://github.com/deepflowio/deepflow/pull/7263) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: server recorder prints unnecessary error logs [#7262](https://github.com/deepflowio/deepflow/pull/7262) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
@@ -40,6 +44,14 @@
 * Fix prometheus data cannot be labeled with universal tags，if slow-decoder is used. [#7100](https://github.com/deepflowio/deepflow/pull/7100)
 
 #### NEW FEATURE
+* feat: add trace query delta for tracemap [#7747](https://github.com/deepflowio/deepflow/pull/7747) by [taloric](https://github.com/taloric)
+* Revert "feat: agent - eBPF Modify the version number of the Java agent" [#7740](https://github.com/deepflowio/deepflow/pull/7740) by [yinjiping](https://github.com/yinjiping)
+* feat: add auto_instace/auto_service field for profile [#7737](https://github.com/deepflowio/deepflow/pull/7737) by [lzf575](https://github.com/lzf575)
+* feat: Support k8s opengauss cluster [#7736](https://github.com/deepflowio/deepflow/pull/7736) by [rvql](https://github.com/rvql)
+* feat: agent - eBPF Modify the version number of the Java agent [#7733](https://github.com/deepflowio/deepflow/pull/7733) by [yinjiping](https://github.com/yinjiping)
+* feat: agent - eBPF Java agent uses caching to reduce send frequency [#7730](https://github.com/deepflowio/deepflow/pull/7730) by [yinjiping](https://github.com/yinjiping)
+* feat: Tars protocol parsing is supported [#7709](https://github.com/deepflowio/deepflow/pull/7709) by [incoffeemonster](https://github.com/incoffeemonster)
+* feat: add pod_cluster_id in ch_pod_ingress and ch_pod_node table [#7683](https://github.com/deepflowio/deepflow/pull/7683) by [duandaa](https://github.com/duandaa)
 * feat: Support kubernetes api field_selector [#7248](https://github.com/deepflowio/deepflow/pull/7248) by [rvql](https://github.com/rvql)
 * feat: add debug ctl to rebalance agent by traffic [#7184](https://github.com/deepflowio/deepflow/pull/7184) by [roryye](https://github.com/roryye)
 * feat: agent - eBPF Add JAVA symbol file generation log [#7258](https://github.com/deepflowio/deepflow/pull/7258) by [yinjiping](https://github.com/yinjiping)
@@ -67,6 +79,8 @@
 * refactor: Change crate name [#7155](https://github.com/deepflowio/deepflow/pull/7155) by [rvql](https://github.com/rvql)
 
 #### Performance
+* perf: speed up the update of ClickHouse table structure [#7748](https://github.com/deepflowio/deepflow/pull/7748) by [lzf575](https://github.com/lzf575)
+* perf: speed up the update of ClickHouse table structure [#7746](https://github.com/deepflowio/deepflow/pull/7746) by [lzf575](https://github.com/lzf575)
 * perf: add setting ttl_only_drop_parts to the CK table to make TTL more efficient [#7265](https://github.com/deepflowio/deepflow/pull/7265) by [lzf575](https://github.com/lzf575)
 * perf: improve parsing RequestResource from http.url of OTel data [#7172](https://github.com/deepflowio/deepflow/pull/7172) by [lzf575](https://github.com/lzf575)
 
@@ -76,3 +90,7 @@
 
 #### Chore
 * chore: update cli dependencies [#7249](https://github.com/deepflowio/deepflow/pull/7249) by [lzf575](https://github.com/lzf575)
+
+
+#### OTHER
+* use .env to config docker-compose.yaml [#7729](https://github.com/deepflowio/deepflow/pull/7729) by [asdfsx](https://github.com/asdfsx)
