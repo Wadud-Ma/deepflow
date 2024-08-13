@@ -8,6 +8,10 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: agent enable feature permission [#7794](https://github.com/deepflowio/deepflow/pull/7794) by [roryye](https://github.com/roryye)
+* Revert "fix: refresh agent enable feature" [#7792](https://github.com/deepflowio/deepflow/pull/7792) by [jin-xiaofeng](https://github.com/jin-xiaofeng)
+* fix: refresh agent enable feature [#7790](https://github.com/deepflowio/deepflow/pull/7790) by [roryye](https://github.com/roryye)
+* fix: concurrent map read and map write [#7776](https://github.com/deepflowio/deepflow/pull/7776) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: agent - remove duplicate vhost dispatcher [#7267](https://github.com/deepflowio/deepflow/pull/7267) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: Show metrics use query cache can be configured [#7263](https://github.com/deepflowio/deepflow/pull/7263) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: server recorder prints unnecessary error logs [#7262](https://github.com/deepflowio/deepflow/pull/7262) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
@@ -63,10 +67,12 @@
 * feat: server directly reports metrics of load1_by_cpu_num that can be used for alert [#7088](https://github.com/deepflowio/deepflow/pull/7088) by [lzf575](https://github.com/lzf575)
 
 #### Refactoring
+* refactor: modify the default batch write size for metrics and flow logs [#7789](https://github.com/deepflowio/deepflow/pull/7789) by [lzf575](https://github.com/lzf575)
 * refactor: server recorder polishes id allocator [#7168](https://github.com/deepflowio/deepflow/pull/7168) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
 * refactor: Change crate name [#7155](https://github.com/deepflowio/deepflow/pull/7155) by [rvql](https://github.com/rvql)
 
 #### Performance
+* perf: improve the performance of ClickHouse table changes under multiple organizations [#7788](https://github.com/deepflowio/deepflow/pull/7788) by [lzf575](https://github.com/lzf575)
 * perf: add setting ttl_only_drop_parts to the CK table to make TTL more efficient [#7265](https://github.com/deepflowio/deepflow/pull/7265) by [lzf575](https://github.com/lzf575)
 * perf: improve parsing RequestResource from http.url of OTel data [#7172](https://github.com/deepflowio/deepflow/pull/7172) by [lzf575](https://github.com/lzf575)
 
