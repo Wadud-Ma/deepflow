@@ -8,6 +8,13 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: Add libpcap dependency to installation package [#7833](https://github.com/deepflowio/deepflow/pull/7833) by [yuanchaoa](https://github.com/yuanchaoa)
+* fix: service data is not written to ck [#7832](https://github.com/deepflowio/deepflow/pull/7832) by [duandaa](https://github.com/duandaa)
+* fix: fix agent rebalance panic [#7831](https://github.com/deepflowio/deepflow/pull/7831) by [roryye](https://github.com/roryye)
+* fix: Modify alert_event enum tag filter error #26069 [#7828](https://github.com/deepflowio/deepflow/pull/7828) by [Ericsssss](https://github.com/Ericsssss)
+* fix: fix the problem of config pointer copy [#7825](https://github.com/deepflowio/deepflow/pull/7825) by [jin-xiaofeng](https://github.com/jin-xiaofeng)
+* fix: Modify alert_event _id filter error #26055 [#7818](https://github.com/deepflowio/deepflow/pull/7818) by [Ericsssss](https://github.com/Ericsssss)
+* fix: Increase the Tars protocol number in the Server section [#7813](https://github.com/deepflowio/deepflow/pull/7813) by [incoffeemonster](https://github.com/incoffeemonster)
 * fix: agent - remove duplicate vhost dispatcher [#7267](https://github.com/deepflowio/deepflow/pull/7267) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: Show metrics use query cache can be configured [#7263](https://github.com/deepflowio/deepflow/pull/7263) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: server recorder prints unnecessary error logs [#7262](https://github.com/deepflowio/deepflow/pull/7262) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
@@ -40,6 +47,7 @@
 * Fix prometheus data cannot be labeled with universal tags，if slow-decoder is used. [#7100](https://github.com/deepflowio/deepflow/pull/7100)
 
 #### NEW FEATURE
+* feat: Modify policy_app_type value [#7822](https://github.com/deepflowio/deepflow/pull/7822) by [Ericsssss](https://github.com/Ericsssss)
 * feat: Support kubernetes api field_selector [#7248](https://github.com/deepflowio/deepflow/pull/7248) by [rvql](https://github.com/rvql)
 * feat: add debug ctl to rebalance agent by traffic [#7184](https://github.com/deepflowio/deepflow/pull/7184) by [roryye](https://github.com/roryye)
 * feat: agent - eBPF Add JAVA symbol file generation log [#7258](https://github.com/deepflowio/deepflow/pull/7258) by [yinjiping](https://github.com/yinjiping)
