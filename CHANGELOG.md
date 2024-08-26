@@ -8,6 +8,9 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: delete agent group [#7953](https://github.com/deepflowio/deepflow/pull/7953) by [roryye](https://github.com/roryye)
+* fix: agent registration followGroupFeatures is all features [#7949](https://github.com/deepflowio/deepflow/pull/7949) by [jin-xiaofeng](https://github.com/jin-xiaofeng)
+* fix: license_func_log sql [#7943](https://github.com/deepflowio/deepflow/pull/7943) by [roryye](https://github.com/roryye)
 * fix: agent - remove duplicate vhost dispatcher [#7267](https://github.com/deepflowio/deepflow/pull/7267) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: Show metrics use query cache can be configured [#7263](https://github.com/deepflowio/deepflow/pull/7263) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: server recorder prints unnecessary error logs [#7262](https://github.com/deepflowio/deepflow/pull/7262) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
@@ -40,6 +43,8 @@
 * Fix prometheus data cannot be labeled with universal tags，if slow-decoder is used. [#7100](https://github.com/deepflowio/deepflow/pull/7100)
 
 #### NEW FEATURE
+* feat: Support DWARF unwinding from kernel context [#7940](https://github.com/deepflowio/deepflow/pull/7940) by [rvql](https://github.com/rvql)
+* feat: moves mysql models to independent directory [#7929](https://github.com/deepflowio/deepflow/pull/7929) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
 * feat: Support kubernetes api field_selector [#7248](https://github.com/deepflowio/deepflow/pull/7248) by [rvql](https://github.com/rvql)
 * feat: add debug ctl to rebalance agent by traffic [#7184](https://github.com/deepflowio/deepflow/pull/7184) by [roryye](https://github.com/roryye)
 * feat: agent - eBPF Add JAVA symbol file generation log [#7258](https://github.com/deepflowio/deepflow/pull/7258) by [yinjiping](https://github.com/yinjiping)
