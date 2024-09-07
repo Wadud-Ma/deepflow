@@ -8,6 +8,7 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: Bad event type for offcpu profile [#8078](https://github.com/deepflowio/deepflow/pull/8078) by [rvql](https://github.com/rvql)
 * fix: agent - remove duplicate vhost dispatcher [#7267](https://github.com/deepflowio/deepflow/pull/7267) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: Show metrics use query cache can be configured [#7263](https://github.com/deepflowio/deepflow/pull/7263) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: server recorder prints unnecessary error logs [#7262](https://github.com/deepflowio/deepflow/pull/7262) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
