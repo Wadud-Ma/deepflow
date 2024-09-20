@@ -8,6 +8,8 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: applicaition log decode failed causes subsequent data anomalies [#8179](https://github.com/deepflowio/deepflow/pull/8179) by [lzf575](https://github.com/lzf575)
+* fix: Bad cstr passed into pcap_compile_nopcap [#8171](https://github.com/deepflowio/deepflow/pull/8171) by [rvql](https://github.com/rvql)
 * fix: agent - remove duplicate vhost dispatcher [#7267](https://github.com/deepflowio/deepflow/pull/7267) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: Show metrics use query cache can be configured [#7263](https://github.com/deepflowio/deepflow/pull/7263) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: server recorder prints unnecessary error logs [#7262](https://github.com/deepflowio/deepflow/pull/7262) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
@@ -63,6 +65,7 @@
 * feat: server directly reports metrics of load1_by_cpu_num that can be used for alert [#7088](https://github.com/deepflowio/deepflow/pull/7088) by [lzf575](https://github.com/lzf575)
 
 #### Refactoring
+* refactor: agent is compatibles with configuration and interfaces of both old and new versions [#8084](https://github.com/deepflowio/deepflow/pull/8084) by [TomatoMr](https://github.com/TomatoMr)
 * refactor: server recorder polishes id allocator [#7168](https://github.com/deepflowio/deepflow/pull/7168) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
 * refactor: Change crate name [#7155](https://github.com/deepflowio/deepflow/pull/7155) by [rvql](https://github.com/rvql)
 
