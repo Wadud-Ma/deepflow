@@ -40,6 +40,7 @@
 * Fix prometheus data cannot be labeled with universal tags，if slow-decoder is used. [#7100](https://github.com/deepflowio/deepflow/pull/7100)
 
 #### NEW FEATURE
+* feat: agent - eBPF Adjust value range of socket/trace map configuration [#8239](https://github.com/deepflowio/deepflow/pull/8239) by [yinjiping](https://github.com/yinjiping)
 * feat: Support kubernetes api field_selector [#7248](https://github.com/deepflowio/deepflow/pull/7248) by [rvql](https://github.com/rvql)
 * feat: add debug ctl to rebalance agent by traffic [#7184](https://github.com/deepflowio/deepflow/pull/7184) by [roryye](https://github.com/roryye)
 * feat: agent - eBPF Add JAVA symbol file generation log [#7258](https://github.com/deepflowio/deepflow/pull/7258) by [yinjiping](https://github.com/yinjiping)
